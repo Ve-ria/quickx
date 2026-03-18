@@ -46,23 +46,16 @@ type registryEntry struct {
 // If the registry is unreachable (no internet, repo not yet created, etc.)
 // it falls back to the built-in templates bundled with the binary.
 func FetchAll() ([]Template, error) {
+	remote, err := fetchFromGitHub()
+	if err == nil && len(remote) > 0 {
+		merged := mergeTemplates(builtinTemplates, remote)
+		return merged, nil
+	}
+	// Remote unavailable — try local cache, then fall back to built-ins.
 	if cached, ok := loadCache(); ok {
-		// Always merge with builtins so new built-in templates added in a
-		// binary update are visible even while the remote cache is fresh.
 		return mergeTemplates(builtinTemplates, cached), nil
 	}
-	remote, err := fetchFromGitHub()
-	if err != nil {
-		// Registry unavailable — use built-ins so the tool still works.
-		return builtinTemplates, nil
-	}
-	if len(remote) == 0 {
-		return builtinTemplates, nil
-	}
-	// Merge: built-ins provide a baseline; remote templates with the same ID
-	// override them so the registry can ship updates without a binary release.
-	merged := mergeTemplates(builtinTemplates, remote)
-	return merged, nil
+	return builtinTemplates, nil
 }
 
 // mergeTemplates returns base overridden by any remote entry with the same ID,
