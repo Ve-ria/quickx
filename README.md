@@ -98,5 +98,5 @@ Config is stored at:
 
 GPL-v3
 
-### Community
+## Community
 [Linux.do](https://linux.do)
