@@ -30,6 +30,12 @@ type Config struct {
 	CCHaiku  string `yaml:"cc_haiku,omitempty"`
 	CCSonnet string `yaml:"cc_sonnet,omitempty"`
 
+	// Codex inference options (written verbatim to config.toml).
+	// ReasoningEffort: minimal | low | medium | high | xhigh  (default: high)
+	// ModelVerbosity:  low | medium | high  (empty = use model default)
+	ReasoningEffort string `yaml:"reasoning_effort,omitempty"`
+	ModelVerbosity  string `yaml:"model_verbosity,omitempty"`
+
 	// Template reference (empty when created in Custom mode)
 	TemplateID string `yaml:"template_id,omitempty"`
 }

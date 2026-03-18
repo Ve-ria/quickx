@@ -15,4 +15,10 @@ type Template struct {
 	AuthMethod  string   `yaml:"auth_method"`
 	DocsURL     string   `yaml:"docs_url,omitempty"`
 	RequiredEnvs []string `yaml:"required_envs,omitempty"`
+
+	// Codex inference options (written to config.toml top-level keys).
+	// ReasoningEffort: minimal | low | medium | high | xhigh
+	// ModelVerbosity:  low | medium | high  (omit to use model default)
+	ReasoningEffort string `yaml:"reasoning_effort,omitempty"`
+	ModelVerbosity  string `yaml:"model_verbosity,omitempty"`
 }

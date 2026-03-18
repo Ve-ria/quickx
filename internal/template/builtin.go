@@ -5,15 +5,16 @@ package template
 // repo has not been set up yet.
 var builtinTemplates = []Template{
 	{
-		ID:          "openai",
-		DisplayName: "OpenAI (official)",
-		Scope:       []string{"codex"},
-		BaseURL:     "https://api.openai.com/v1",
-		APIKey:      `${--:"OpenAI API Key":""}`,
-		Model:       `${--:"Default model":"gpt-4o"}`,
-		WireAPI:     "responses",
-		AuthMethod:  "api_key",
-		DocsURL:     "https://platform.openai.com/docs",
+		ID:              "openai",
+		DisplayName:     "OpenAI (official)",
+		Scope:           []string{"codex"},
+		BaseURL:         "https://api.openai.com/v1",
+		APIKey:          `${--:"OpenAI API Key":""}`,
+		Model:           `${--:"Default model":"gpt-4o"}`,
+		WireAPI:         "responses",
+		AuthMethod:      "api_key",
+		ReasoningEffort: `${--:"Reasoning effort (minimal/low/medium/high/xhigh)":"high"}`,
+		DocsURL:         "https://platform.openai.com/docs",
 	},
 	{
 		ID:          "amethyst",

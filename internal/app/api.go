@@ -69,15 +69,17 @@ func (a *API) RemoveConfig(name string) error {
 // CreateConfigFromTemplate fills a template with answers and saves the config.
 func (a *API) CreateConfigFromTemplate(name string, tmpl tmplpkg.Template, answers map[string]string) error {
 	c := config.Config{
-		Name:        name,
-		DisplayName: tmpl.DisplayName,
-		Scope:       tmpl.Scope,
-		BaseURL:     tmplpkg.Substitute(tmpl.BaseURL, answers),
-		APIKey:      tmplpkg.Substitute(tmpl.APIKey, answers),
-		Model:       tmplpkg.Substitute(tmpl.Model, answers),
-		WireAPI:     tmpl.WireAPI,
-		AuthMethod:  tmpl.AuthMethod,
-		TemplateID:  tmpl.ID,
+		Name:            name,
+		DisplayName:     tmpl.DisplayName,
+		Scope:           tmpl.Scope,
+		BaseURL:         tmplpkg.Substitute(tmpl.BaseURL, answers),
+		APIKey:          tmplpkg.Substitute(tmpl.APIKey, answers),
+		Model:           tmplpkg.Substitute(tmpl.Model, answers),
+		WireAPI:         tmpl.WireAPI,
+		AuthMethod:      tmpl.AuthMethod,
+		ReasoningEffort: tmpl.ReasoningEffort,
+		ModelVerbosity:  tmpl.ModelVerbosity,
+		TemplateID:      tmpl.ID,
 	}
 	if c.DisplayName == "" {
 		c.DisplayName = name

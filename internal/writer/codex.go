@@ -49,7 +49,14 @@ func writeCodexConfig(configs []config.Config, active *config.Config) error {
 	if active.Model != "" {
 		managed.WriteString(fmt.Sprintf("model = %q\n", active.Model))
 	}
-	managed.WriteString("model_reasoning_effort = \"high\"\n")
+	reasoningEffort := active.ReasoningEffort
+	if reasoningEffort == "" {
+		reasoningEffort = "high"
+	}
+	managed.WriteString(fmt.Sprintf("model_reasoning_effort = %q\n", reasoningEffort))
+	if active.ModelVerbosity != "" {
+		managed.WriteString(fmt.Sprintf("model_verbosity = %q\n", active.ModelVerbosity))
+	}
 	managed.WriteString("disable_response_storage = true\n")
 	managed.WriteString("\n")
 
