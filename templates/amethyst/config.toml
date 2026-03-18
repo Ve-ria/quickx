@@ -1,0 +1,36 @@
+# Amethyst API — extra Codex configuration (TemplateFiles)
+#
+# QuickCLI merges this file into ~/.codex/config.toml when you activate an
+# Amethyst config.  Keys owned by QuickCLI (model_provider, model,
+# model_reasoning_effort, model_verbosity, model_providers.*) and security-
+# protected keys (approval_policy, chatgpt_base_url, forced_login_method, …)
+# are stripped automatically before merging, so none of those need to appear
+# here.
+#
+# mcp_servers and permissions entries are add-only: if you already have a
+# server or profile with the same name it will NOT be overwritten.
+
+# ── Sandbox ───────────────────────────────────────────────────────────────────
+# workspace-write: the agent can read/write files inside your project root and
+# /tmp but cannot touch other paths or open outbound network connections from
+# sandboxed shell commands.
+sandbox_mode = "workspace-write"
+
+# ── Web search ────────────────────────────────────────────────────────────────
+# "cached" queries OpenAI's maintained index — fast, private, no live fetching.
+# Switch to "live" in your own config if you need up-to-the-minute results.
+web_search = "cached"
+
+# ── History ───────────────────────────────────────────────────────────────────
+[history]
+persistence = "save-all"   # keep full session transcripts in history.jsonl
+
+# ── Feature toggles ───────────────────────────────────────────────────────────
+[features]
+undo           = true   # enable /undo to revert agent file changes
+shell_tool     = true   # expose the default shell tool to the agent
+shell_snapshot = true   # snapshot shell env for faster repeated commands
+multi_agent    = true   # allow spawning collaborative subagent threads
+fast_mode      = true   # enable Fast service-tier selection
+personality    = true   # allow /personality switching in the TUI
+

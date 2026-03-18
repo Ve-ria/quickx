@@ -8,3 +8,4 @@ model: '${--:"Default model":"gpt-5.4"}'
 wire_api: responses
 auth_method: api_key
 docs_url: https://amethyst.ltd
+codex_toml_file: config.toml

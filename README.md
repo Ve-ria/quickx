@@ -8,6 +8,18 @@
 
 Switch AI coding assistant providers — Claude Code and OpenAI Codex — with a single command.
 
+## Documentation
+
+| Guide | Description |
+|---|---|
+| [Installation](docs/installation.md) | npm, pre-built binaries, build from source |
+| [Commands](docs/commands.md) | Full CLI command reference |
+| [Configuration](docs/configuration.md) | Config file schema and what QuickCLI writes |
+| [Templates](docs/templates.md) | Template registry and magic syntax |
+| [TemplateFiles](docs/template-files.md) | Shipping extra Codex config with a template |
+| [Login](docs/login.md) | ChatGPT OAuth browser & device-code flows |
+| [Contributing](docs/contributing.md) | Add templates or contribute code |
+
 ## Installation
 
 ```bash

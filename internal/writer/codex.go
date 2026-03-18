@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/quickcli/quick/internal/config"
+	codexmerge "github.com/quickcli/quick/internal/config_merge/codex"
 	"github.com/quickcli/quick/internal/login"
 )
 
@@ -93,6 +94,18 @@ func writeCodexConfig(configs []config.Config, active *config.Config) error {
 	// QuickCLI (e.g. [projects.*], [windows], [history], etc.).
 	// We keep any TOML section that doesn't start with [model_providers.
 	preserved := preservedSections(path)
+
+	// If the active config carries extra Codex TOML from a template, merge it
+	// into the preserved (user) sections.  QuickCLI-owned keys are stripped
+	// from the template content first so the managed block always wins.
+	if active.CodexTomlContent != "" {
+		filtered, filterErr := codexmerge.FilterOwned(active.CodexTomlContent)
+		if filterErr == nil && filtered != "" {
+			if merged, mergeErr := codexmerge.Merge(preserved, filtered); mergeErr == nil {
+				preserved = merged
+			}
+		}
+	}
 
 	result := managed.String()
 	if preserved != "" {

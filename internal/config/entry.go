@@ -38,6 +38,12 @@ type Config struct {
 
 	// Template reference (empty when created in Custom mode)
 	TemplateID string `yaml:"template_id,omitempty"`
+
+	// Extra Codex config supplied by the template (raw TOML string).
+	// When non-empty, its content is schema-aware merged into
+	// ~/.codex/config.toml on every `quick use`, after QuickCLI-owned keys
+	// have been stripped via codexmerge.FilterOwned.
+	CodexTomlContent string `yaml:"codex_toml_content,omitempty"`
 }
 
 // HasScope reports whether c is scoped to the given target.

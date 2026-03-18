@@ -119,7 +119,8 @@ func fetchFromGitHub() ([]Template, error) {
 		if e.Type != "dir" {
 			continue
 		}
-		tmpl, err := fetchTemplate(e.Name)
+		// loadFiles=false: listing only, no extra file downloads.
+		tmpl, err := fetchTemplate(e.Name, false)
 		if err != nil {
 			// Skip unreadable templates rather than failing entirely.
 			continue
@@ -147,7 +148,10 @@ func listRegistryEntries() ([]registryEntry, error) {
 	return entries, nil
 }
 
-func fetchTemplate(id string) (*Template, error) {
+// fetchTemplate fetches a single template's YAML from GitHub.
+// When loadFiles is true and the template declares a codex_toml_file, the
+// referenced file is also fetched and stored in Template.CodexTomlContent.
+func fetchTemplate(id string, loadFiles bool) (*Template, error) {
 	rawURL := fmt.Sprintf(
 		"https://raw.githubusercontent.com/%s/%s/%s/%s/%s/template.yaml",
 		registryOwner, registryRepo, registryBranch, registryPath, id,
@@ -171,11 +175,25 @@ func fetchTemplate(id string) (*Template, error) {
 	if tmpl.ID == "" {
 		tmpl.ID = id
 	}
+
+	if loadFiles && tmpl.CodexTomlFile != "" {
+		tomlURL := fmt.Sprintf(
+			"https://raw.githubusercontent.com/%s/%s/%s/%s/%s/%s",
+			registryOwner, registryRepo, registryBranch, registryPath, id, tmpl.CodexTomlFile,
+		)
+		if content, fetchErr := fetchRawText(tomlURL); fetchErr == nil {
+			tmpl.CodexTomlContent = content
+		}
+		// Silently ignore fetch errors — the field stays empty and the writer
+		// will simply skip the merge step.
+	}
+
 	return &tmpl, nil
 }
 
-// FetchByID fetches a single template by id or by raw URL.
-// For a plain ID it first checks built-ins (instant, no network) then the registry.
+// FetchByID fetches a single template by id or by raw URL, including any
+// associated template files (e.g. codex_toml_file).  It is used when the user
+// is actually applying a template, so we need the full content.
 func FetchByID(idOrURL string) (*Template, error) {
 	if strings.HasPrefix(idOrURL, "http://") || strings.HasPrefix(idOrURL, "https://") {
 		return fetchTemplateFromURL(idOrURL)
@@ -187,7 +205,8 @@ func FetchByID(idOrURL string) (*Template, error) {
 			return &copy, nil
 		}
 	}
-	return fetchTemplate(idOrURL)
+	// loadFiles=true: fetch associated files (codex_toml_file) as well.
+	return fetchTemplate(idOrURL, true)
 }
 
 func fetchTemplateFromURL(rawURL string) (*Template, error) {
@@ -215,4 +234,21 @@ func httpGet(url string) (*http.Response, error) {
 	}
 	req.Header.Set("User-Agent", "quickcli/quick")
 	return client.Do(req)
+}
+
+// fetchRawText fetches a URL and returns its body as a string.
+func fetchRawText(url string) (string, error) {
+	resp, err := httpGet(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("fetch %s: %s", url, resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
 }

@@ -21,4 +21,12 @@ type Template struct {
 	// ModelVerbosity:  low | medium | high  (omit to use model default)
 	ReasoningEffort string `yaml:"reasoning_effort,omitempty"`
 	ModelVerbosity  string `yaml:"model_verbosity,omitempty"`
+
+	// TemplateFiles: optional extra Codex config.
+	// CodexTomlFile names a file (relative to the template directory on GitHub)
+	// whose contents will be schema-aware merged into ~/.codex/config.toml.
+	// CodexTomlContent holds the fetched file content in memory only (not
+	// serialised into template.yaml).
+	CodexTomlFile    string `yaml:"codex_toml_file,omitempty"`
+	CodexTomlContent string `yaml:"-"` // in-memory only
 }
