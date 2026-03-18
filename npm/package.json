@@ -1,6 +1,6 @@
 {
   "name": "@starryskyworld/quickcli",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Switch AI coding assistant providers (Claude Code, Codex) with one command",
   "keywords": ["ai", "codex", "claude", "cli", "provider"],
   "homepage": "https://github.com/AmethystDev-Labs/QuickCLI",

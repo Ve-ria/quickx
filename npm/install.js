@@ -57,7 +57,9 @@ async function install() {
   fs.mkdirSync(binDir, { recursive: true });
 
   const tmpPath = path.join(binDir, assetName);
-  const binaryName = process.platform === "win32" ? "quick.exe" : "quick";
+  // The JS shim at bin/quick handles dispatch; the real binary uses a different name
+  // to avoid colliding with the shim file.
+  const binaryName = process.platform === "win32" ? "quick.exe" : "quick-bin";
   const binaryDest = path.join(binDir, binaryName);
 
   console.log(`Downloading ${assetName} from GitHub Releases…`);
@@ -71,10 +73,11 @@ async function install() {
       { stdio: "inherit" }
     );
   } else {
-    // macOS/Linux
+    // macOS/Linux: extract as "quick" then rename to "quick-bin"
     execSync(`tar -xzf "${tmpPath}" -C "${binDir}" quick`, {
       stdio: "inherit",
     });
+    fs.renameSync(path.join(binDir, "quick"), binaryDest);
   }
 
   fs.unlinkSync(tmpPath);
