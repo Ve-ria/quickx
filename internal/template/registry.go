@@ -47,7 +47,9 @@ type registryEntry struct {
 // it falls back to the built-in templates bundled with the binary.
 func FetchAll() ([]Template, error) {
 	if cached, ok := loadCache(); ok {
-		return cached, nil
+		// Always merge with builtins so new built-in templates added in a
+		// binary update are visible even while the remote cache is fresh.
+		return mergeTemplates(builtinTemplates, cached), nil
 	}
 	remote, err := fetchFromGitHub()
 	if err != nil {
