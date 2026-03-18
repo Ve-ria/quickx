@@ -1,5 +1,11 @@
 # QuickCLI (`quick`)
 
+[![Release](https://github.com/AmethystDev-Labs/QuickCLI/actions/workflows/release.yml/badge.svg)](https://github.com/AmethystDev-Labs/QuickCLI/actions/workflows/release.yml)
+[![npm version](https://img.shields.io/npm/v/@starryskyworld/quickcli)](https://www.npmjs.com/package/@starryskyworld/quickcli)
+[![npm downloads](https://img.shields.io/npm/dm/@starryskyworld/quickcli)](https://www.npmjs.com/package/@starryskyworld/quickcli)
+[![Node.js ≥16](https://img.shields.io/node/v/@starryskyworld/quickcli)](https://nodejs.org)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 Switch AI coding assistant providers — Claude Code and OpenAI Codex — with a single command.
 
 ## Installation
