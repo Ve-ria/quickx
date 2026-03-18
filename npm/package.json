@@ -1,5 +1,5 @@
 {
-  "name": "quickcli",
+  "name": "@starryskyworld/quickcli",
   "version": "1.0.0",
   "description": "Switch AI coding assistant providers (Claude Code, Codex) with one command",
   "keywords": ["ai", "codex", "claude", "cli", "provider"],
