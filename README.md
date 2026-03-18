@@ -14,35 +14,39 @@ Switch AI coding assistant providers — Claude Code and OpenAI Codex — with a
 npm install -g @starryskyworld/quickcli
 ```
 
-Or download a binary directly from [GitHub Releases](https://github.com/quickcli/quick/releases).
+Or download a binary directly from [GitHub Releases](https://github.com/AmethystDev-Labs/QuickCLI/releases).
 
 ## Quick Start
 
 ```bash
-# Add a provider (interactive TUI wizard)
-quick provider add
+# Interactive TUI menu (bare invocation)
+quick
 
-# Add a provider with flags
-quick provider add privnode \
+# Add a config (interactive TUI wizard)
+quick config add
+
+# Add a config with flags
+quick config add privnode \
   --scope codex,claudecode \
   --base-url https://privnode.com/v1 \
   --api-key sk-xxx \
   --model gpt-5-codex
 
-# Add a provider from a template
-quick provider add --from-template privnode
+# Add a config from a template
+quick config add --from-template openai
 
-# List providers
-quick provider list
+# Log in with ChatGPT (creates a Codex config automatically)
+quick config login
+quick config login --device   # SSH / headless environments
 
-# Activate a provider (auto-creates and activates a profile)
+# List configs
+quick config list
+
+# Activate a config
 quick use privnode
 
 # Check current status
 quick status
-
-# Interactive TUI menu (bare invocation)
-quick
 ```
 
 ## Commands
@@ -50,20 +54,18 @@ quick
 | Command | Description |
 |---|---|
 | `quick` | Open interactive TUI main menu |
-| `quick provider add [name] [flags]` | Add a provider (TUI wizard or flags) |
-| `quick provider list` | List all providers |
-| `quick provider remove <name>` | Remove a provider |
+| `quick config add [name] [flags]` | Add a config (TUI wizard or flags) |
+| `quick config list` | List all configs |
+| `quick config remove <name>` | Remove a config |
+| `quick config login [name]` | Log in with ChatGPT and create a Codex config |
 | `quick template list` | List registry templates |
 | `quick template preview <id>` | Preview a template |
-| `quick profile create <name> [providers...]` | Create a profile |
-| `quick profile list` | List profiles |
-| `quick profile remove <name>` | Remove a profile |
-| `quick use <name>` | Activate a profile or provider |
+| `quick use <config-name>` | Activate a config |
 | `quick status` | Show active configuration |
 
 ## How It Works
 
-`quick` writes provider configuration to:
+`quick` writes configuration to:
 
 | Tool | Files |
 |---|---|
@@ -72,7 +74,7 @@ quick
 
 Restart your shell (or `source ~/.zshrc`) after running `quick use` for environment variable changes to take effect.
 
-## Provider Flags
+## Config Flags
 
 | Flag | Description |
 |---|---|
@@ -80,14 +82,11 @@ Restart your shell (or `source ~/.zshrc`) after running `quick use` for environm
 | `--base-url` | Provider API base URL |
 | `--api-key` | API key |
 | `--model` | Default model |
-| `--cc-opus` | Claude Code Opus model override |
-| `--cc-haiku` | Claude Code Haiku model override |
-| `--cc-sonnet` | Claude Code Sonnet model override |
-| `--from-template` | Template ID or URL (mutually exclusive with manual flags) |
+| `--from-template` | Template ID (mutually exclusive with manual flags) |
 
 ## Template Magic Syntax
 
-Templates use `${--:"<question>":"<default>"}` placeholders. When you run `quick provider add --from-template <id>`, QuickCLI prompts you for each dynamic value:
+Templates use `${--:"<question>":"<default>"}` placeholders. When you run `quick config add --from-template <id>`, QuickCLI prompts you for each dynamic value:
 
 ```yaml
 api_key: '${--:"Enter your API Key":""}'
