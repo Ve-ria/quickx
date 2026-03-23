@@ -1,6 +1,6 @@
 {
   "name": "@starryskyworld/quickcli",
-  "version": "1.0.6",
+  "version": "2.0.0-beta.1",
   "description": "Switch AI coding assistant providers (Claude Code, Codex, OpenCode) with one command",
   "keywords": [
     "ai",
