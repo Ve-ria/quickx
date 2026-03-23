@@ -4,6 +4,7 @@ package config
 const (
 	ScopeCodex      = "codex"
 	ScopeClaudeCode = "claudecode"
+	ScopeOpenCode   = "opencode"
 )
 
 // Config is a named configuration that can be activated with `quick use <name>`.
@@ -12,7 +13,7 @@ const (
 type Config struct {
 	Name        string   `yaml:"name"`
 	DisplayName string   `yaml:"display_name,omitempty"`
-	Scope       []string `yaml:"scope"` // "codex", "claudecode", or both
+	Scope       []string `yaml:"scope"` // "codex", "claudecode", "opencode", or any combination
 
 	// Connection
 	BaseURL string `yaml:"base_url,omitempty"`
@@ -61,3 +62,6 @@ func (c Config) HasClaudeCodeScope() bool { return c.HasScope(ScopeClaudeCode) }
 
 // HasCodexScope reports whether c applies to Codex.
 func (c Config) HasCodexScope() bool { return c.HasScope(ScopeCodex) }
+
+// HasOpenCodeScope reports whether c applies to OpenCode.
+func (c Config) HasOpenCodeScope() bool { return c.HasScope(ScopeOpenCode) }

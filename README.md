@@ -6,7 +6,7 @@
 [![Node.js ≥16](https://img.shields.io/node/v/@starryskyworld/quickcli)](https://nodejs.org)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-Switch AI coding assistant providers — Claude Code and OpenAI Codex — with a single command.
+Switch AI coding assistant providers — Claude Code, OpenAI Codex, and OpenCode — with a single command.
 
 ## Documentation
 
@@ -83,6 +83,7 @@ quick status
 |---|---|
 | Claude Code | `~/.claude/settings.json` (`env` key) + shell profile |
 | Codex | `~/.codex/config.toml` + `~/.codex/auth.json` + shell profile |
+| OpenCode | `~/.config/opencode/opencode.json` or an existing `*.jsonc` / `*.json` main config in `~/.config/opencode/` |
 
 Restart your shell (or `source ~/.zshrc`) after running `quick use` for environment variable changes to take effect.
 
@@ -90,10 +91,12 @@ Restart your shell (or `source ~/.zshrc`) after running `quick use` for environm
 
 | Flag | Description |
 |---|---|
-| `--scope` | Comma-separated: `codex`, `claudecode` (default: `codex`) |
+| `--scope` | Comma-separated: `codex`, `claudecode`, `opencode` (default: `codex`) |
 | `--base-url` | Provider API base URL |
 | `--api-key` | API key |
 | `--model` | Default model |
+| `--wire-api` | `responses` or `chat` |
+| `--auth-method` | `api_key`, `chatgpt`, `aws`, `gcp`, `azure` |
 | `--from-template` | Template ID (mutually exclusive with manual flags) |
 
 ## Template Magic Syntax

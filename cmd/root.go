@@ -14,7 +14,7 @@ var rootCmd = &cobra.Command{
 	Use:   "quick",
 	Short: "quick — switch AI coding assistant providers in one command",
 	Long: `quick lets you switch between AI coding assistant configurations
-(Claude Code, Codex) with a single command or through an interactive TUI.
+(Claude Code, Codex, OpenCode) with a single command or through an interactive TUI.
 
 Run without arguments to open the interactive TUI.`,
 	RunE: func(cmd *cobra.Command, args []string) error {

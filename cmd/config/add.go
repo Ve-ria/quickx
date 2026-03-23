@@ -16,6 +16,8 @@ var (
 	addBaseURL      string
 	addAPIKey       string
 	addModel        string
+	addWireAPI      string
+	addAuthMethod   string
 	addFromTemplate string
 )
 
@@ -25,7 +27,7 @@ var AddCmd = &cobra.Command{
 	Long: `Add a new config using flags or from a template.
 --from-template and manual flags (--base-url, --api-key, --model) are mutually exclusive.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if addFromTemplate != "" && (addBaseURL != "" || addAPIKey != "" || addModel != "") {
+		if addFromTemplate != "" && (addBaseURL != "" || addAPIKey != "" || addModel != "" || addWireAPI != "responses" || addAuthMethod != "api_key") {
 			return fmt.Errorf("--from-template and manual flags are mutually exclusive")
 		}
 		name := ""
@@ -40,10 +42,12 @@ var AddCmd = &cobra.Command{
 }
 
 func init() {
-	AddCmd.Flags().StringVar(&addScope, "scope", "codex", "Comma-separated scopes: codex,claudecode")
+	AddCmd.Flags().StringVar(&addScope, "scope", "codex", "Comma-separated scopes: codex,claudecode,opencode")
 	AddCmd.Flags().StringVar(&addBaseURL, "base-url", "", "Provider API base URL")
 	AddCmd.Flags().StringVar(&addAPIKey, "api-key", "", "API key")
 	AddCmd.Flags().StringVar(&addModel, "model", "", "Default model name")
+	AddCmd.Flags().StringVar(&addWireAPI, "wire-api", "responses", "Wire protocol: responses or chat")
+	AddCmd.Flags().StringVar(&addAuthMethod, "auth-method", "api_key", "Auth method: api_key, chatgpt, aws, gcp, azure")
 	AddCmd.Flags().StringVar(&addFromTemplate, "from-template", "", "Template ID (mutually exclusive with manual flags)")
 }
 
@@ -102,8 +106,8 @@ func runAddCustom(name string) error {
 		BaseURL:    addBaseURL,
 		APIKey:     addAPIKey,
 		Model:      addModel,
-		WireAPI:    "responses",
-		AuthMethod: "api_key",
+		WireAPI:    addWireAPI,
+		AuthMethod: addAuthMethod,
 	}); err != nil {
 		return err
 	}

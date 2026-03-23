@@ -17,7 +17,7 @@ active_config: myprovider      # currently active config name
 configs:
   - name: myprovider
     display_name: My Provider
-    scope: [codex]             # "codex", "claudecode", or both
+    scope: [codex]             # "codex", "claudecode", "opencode", or any combination
 
     # Connection
     base_url: https://api.example.com/v1
@@ -69,18 +69,55 @@ requires_openai_auth = true
 ```json
 {
   "env": {
-    "ANTHROPIC_API_KEY": "sk-ant-xxx",
+    "ANTHROPIC_AUTH_TOKEN": "sk-ant-xxx",
     "ANTHROPIC_BASE_URL": "https://api.example.com/v1"
   }
 }
 ```
 
+### `~/.config/opencode/opencode.json` (or existing `*.jsonc` / `*.json` main config)
+
+QuickCLI first looks for an existing OpenCode main config inside `~/.config/opencode/`, preferring JSONC when present. It checks these filenames in order:
+
+1. `opencode.jsonc`
+2. `config.jsonc`
+3. `opencode.json`
+4. `config.json`
+
+If none exist, QuickCLI creates `opencode.json`.
+
+For `wire_api: responses`, QuickCLI writes the built-in OpenAI provider shape:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "openai/gpt-5.4",
+  "provider": {
+    "openai": {
+      "options": {
+        "baseURL": "https://api.example.com/v1",
+        "apiKey": "sk-xxx"
+      },
+      "models": {
+        "gpt-5.4": {
+          "options": {
+            "reasoningEffort": "xhigh",
+            "textVerbosity": "medium"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+For `wire_api: chat`, QuickCLI writes a custom OpenAI-compatible provider using a slugged provider id derived from the QuickCLI config name.
+
 ### Shell profile (`.zshrc` / `.bashrc` / PowerShell profile)
 
 ```bash
 export OPENAI_API_KEY="sk-xxx"
-export OPENAI_BASE_URL="https://api.example.com/v1"
-export ANTHROPIC_API_KEY="sk-ant-xxx"
+export ANTHROPIC_AUTH_TOKEN="sk-ant-xxx"
 export ANTHROPIC_BASE_URL="https://api.example.com/v1"
 ```
 
@@ -94,6 +131,7 @@ Each config declares which tools it applies to:
 |---|---|
 | `codex` | OpenAI Codex CLI |
 | `claudecode` | Anthropic Claude Code |
+| `opencode` | OpenCode |
 
 A config can have both scopes (e.g. a proxy that speaks both APIs).
 

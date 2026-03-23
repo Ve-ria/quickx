@@ -32,6 +32,7 @@ var statusCmd = &cobra.Command{
 
 		printToolStatus("Claude Code", info.ClaudeConfigs)
 		printToolStatus("Codex", info.CodexConfigs)
+		printToolStatus("OpenCode", info.OpenCodeConfigs)
 		return nil
 	},
 }

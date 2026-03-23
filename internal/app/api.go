@@ -19,10 +19,11 @@ import (
 
 // StatusInfo is a snapshot of the current configuration state.
 type StatusInfo struct {
-	ActiveConfig  string
-	ConfigFile    string
-	ClaudeConfigs []config.Config
-	CodexConfigs  []config.Config
+	ActiveConfig    string
+	ConfigFile      string
+	ClaudeConfigs   []config.Config
+	CodexConfigs    []config.Config
+	OpenCodeConfigs []config.Config
 }
 
 // API is the pure business-logic facade. No UI, no printing.
@@ -111,6 +112,9 @@ func (a *API) UseConfig(name string) error {
 	if err := writer.WriteCodex(configs); err != nil {
 		warns = append(warns, "codex: "+err.Error())
 	}
+	if err := writer.WriteOpenCode(configs); err != nil {
+		warns = append(warns, "opencode: "+err.Error())
+	}
 	if err := writer.WriteShellEnv(configs); err != nil {
 		warns = append(warns, "shell profile: "+err.Error())
 	}
@@ -140,6 +144,9 @@ func (a *API) Status() StatusInfo {
 			}
 			if c.HasCodexScope() {
 				info.CodexConfigs = append(info.CodexConfigs, *c)
+			}
+			if c.HasOpenCodeScope() {
+				info.OpenCodeConfigs = append(info.OpenCodeConfigs, *c)
 			}
 		}
 	}

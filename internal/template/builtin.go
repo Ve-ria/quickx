@@ -7,7 +7,7 @@ var builtinTemplates = []Template{
 	{
 		ID:              "openai",
 		DisplayName:     "OpenAI (official)",
-		Scope:           []string{"codex"},
+		Scope:           []string{"codex", "opencode"},
 		BaseURL:         "https://api.openai.com/v1",
 		APIKey:          `${--:"OpenAI API Key":""}`,
 		Model:           `${--:"Default model":"gpt-4o"}`,
@@ -19,7 +19,7 @@ var builtinTemplates = []Template{
 	{
 		ID:          "amethyst",
 		DisplayName: "Amethyst API",
-		Scope:       []string{"codex"},
+		Scope:       []string{"codex", "opencode"},
 		BaseURL:     "https://api.amethyst.ltd/v1",
 		APIKey:      `${--:"Amethyst API Key":""}`,
 		Model:       `${--:"Default model":"gpt-5.4"}`,
@@ -41,7 +41,7 @@ var builtinTemplates = []Template{
 	{
 		ID:          "privnode",
 		DisplayName: "Privnode",
-		Scope:       []string{"codex", "claudecode"},
+		Scope:       []string{"codex", "claudecode", "opencode"},
 		BaseURL:     `${--:"Privnode base URL":"https://privnode.com/v1"}`,
 		APIKey:      `${--:"Privnode API Key":""}`,
 		Model:       `${--:"Default model":"gpt-5-codex"}`,
@@ -52,7 +52,7 @@ var builtinTemplates = []Template{
 	{
 		ID:          "azure-openai",
 		DisplayName: "Azure OpenAI",
-		Scope:       []string{"codex"},
+		Scope:       []string{"codex", "opencode"},
 		BaseURL:     `${--:"Azure endpoint (e.g. https://<name>.openai.azure.com/openai/deployments/<deploy>)":""}`,
 		APIKey:      `${--:"Azure API Key":""}`,
 		Model:       `${--:"Deployment / model name":"gpt-4o"}`,
@@ -63,7 +63,7 @@ var builtinTemplates = []Template{
 	{
 		ID:          "ollama",
 		DisplayName: "Ollama (local)",
-		Scope:       []string{"codex"},
+		Scope:       []string{"codex", "opencode"},
 		BaseURL:     `${--:"Ollama base URL":"http://localhost:11434/v1"}`,
 		APIKey:      "ollama",
 		Model:       `${--:"Model name":"llama3"}`,
@@ -74,7 +74,7 @@ var builtinTemplates = []Template{
 	{
 		ID:          "lmstudio",
 		DisplayName: "LM Studio (local)",
-		Scope:       []string{"codex"},
+		Scope:       []string{"codex", "opencode"},
 		BaseURL:     `${--:"LM Studio base URL":"http://localhost:1234/v1"}`,
 		APIKey:      "lm-studio",
 		Model:       `${--:"Model identifier":""}`,

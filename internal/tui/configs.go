@@ -173,10 +173,12 @@ func newConfigAddScreen(api *app.API, tmpl *tmplpkg.Template) *configAddScreen {
 		// Custom mode.
 		fields = []Field{
 			{Label: "Config name", Placeholder: "my-config"},
-			{Label: "Scope (codex / claudecode / codex,claudecode)", Default: "codex"},
+			{Label: "Scope (codex / claudecode / opencode / any comma-combo)", Default: "codex"},
 			{Label: "Base URL", Placeholder: "https://api.example.com/v1"},
 			{Label: "API Key (leave blank to skip)", Secret: true},
 			{Label: "Default model (optional)", Placeholder: "gpt-4o"},
+			{Label: "Wire API", Default: "responses", Placeholder: "responses or chat"},
+			{Label: "Auth method", Default: "api_key", Placeholder: "api_key / chatgpt / aws / gcp / azure"},
 		}
 		doAdd = func(a []string) error {
 			return api.AddConfig(config.Config{
@@ -185,8 +187,8 @@ func newConfigAddScreen(api *app.API, tmpl *tmplpkg.Template) *configAddScreen {
 				BaseURL:    a[2],
 				APIKey:     a[3],
 				Model:      a[4],
-				WireAPI:    "responses",
-				AuthMethod: "api_key",
+				WireAPI:    a[5],
+				AuthMethod: a[6],
 			})
 		}
 	} else {

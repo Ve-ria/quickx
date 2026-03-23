@@ -45,6 +45,7 @@ func (m *statusScreen) View() string {
 	sb.WriteString("\n")
 	sb.WriteString(renderToolStatus("Claude Code", m.info.ClaudeConfigs))
 	sb.WriteString(renderToolStatus("Codex", m.info.CodexConfigs))
+	sb.WriteString(renderToolStatus("OpenCode", m.info.OpenCodeConfigs))
 
 	sb.WriteString("\n" + hint("q back"))
 

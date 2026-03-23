@@ -37,7 +37,7 @@ quick config add myprovider \
 
 | Flag | Type | Description |
 |---|---|---|
-| `--scope` | string | Comma-separated: `codex`, `claudecode` (default: `codex`) |
+| `--scope` | string | Comma-separated: `codex`, `claudecode`, `opencode` (default: `codex`) |
 | `--base-url` | string | Provider API base URL |
 | `--api-key` | string | API key |
 | `--model` | string | Default model name |
@@ -122,7 +122,8 @@ After activation QuickCLI writes:
 - `~/.codex/config.toml` — Codex provider + inference settings
 - `~/.codex/auth.json` — API key or OAuth tokens
 - `~/.claude/settings.json` — Claude Code API key
-- Shell profile (`~/.zshrc`, `~/.bashrc`, etc.) — `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`
+- `~/.config/opencode/opencode.json` or an existing main `*.jsonc` / `*.json` config — OpenCode provider/model config
+- Shell profile (`~/.zshrc`, `~/.bashrc`, etc.) — `ANTHROPIC_AUTH_TOKEN` / `OPENAI_API_KEY`
 
 **Restart your shell** (or `source ~/.zshrc`) for environment variable changes to take effect.
 
