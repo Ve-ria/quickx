@@ -41,29 +41,29 @@ jobs:
           - runner: macos-13
             platform: darwin
             arch: x64
-            shared_lib: npm/native/lib/libquickcore.dylib
-            tui_path: npm/bin/quick-tui
+            shared_lib: native/lib/libquickcore.dylib
+            tui_path: bin/quick-tui
           - runner: macos-14
             platform: darwin
             arch: arm64
-            shared_lib: npm/native/lib/libquickcore.dylib
-            tui_path: npm/bin/quick-tui
+            shared_lib: native/lib/libquickcore.dylib
+            tui_path: bin/quick-tui
           - runner: ubuntu-24.04
             platform: linux
             arch: x64
-            shared_lib: npm/native/lib/libquickcore.so
-            tui_path: npm/bin/quick-tui
+            shared_lib: native/lib/libquickcore.so
+            tui_path: bin/quick-tui
           - runner: ubuntu-24.04-arm
             platform: linux
             arch: arm64
-            shared_lib: npm/native/lib/libquickcore.so
-            tui_path: npm/bin/quick-tui
+            shared_lib: native/lib/libquickcore.so
+            tui_path: bin/quick-tui
           - runner: windows-2022
             platform: win32
             arch: x64
-            shared_lib: npm/native/lib/quickcore.dll
-            core_dll: npm/native/lib/quickcore.dll
-            tui_path: npm/bin/quick-tui.exe
+            shared_lib: native/lib/quickcore.dll
+            core_dll: native/lib/quickcore.dll
+            tui_path: bin/quick-tui.exe
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
