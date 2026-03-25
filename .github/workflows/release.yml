@@ -72,7 +72,7 @@ jobs:
 
       - name: Install npm build dependencies
         working-directory: npm
-        run: npm install
+        run: npm install --ignore-scripts
 
       - name: Check npm version matches tag
         working-directory: npm

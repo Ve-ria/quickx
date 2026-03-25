@@ -72,6 +72,7 @@ function main() {
       cwd: installRoot(),
       stdio: "inherit",
       env: process.env,
+      shell: process.platform === "win32",
     },
   );
 }
