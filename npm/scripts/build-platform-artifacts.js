@@ -12,7 +12,9 @@ const nativeLibDir = path.join(nativeDir, "lib");
 const binDir = path.join(npmRoot, "bin");
 
 function run(cmd, args, cwd) {
-  execFileSync(cmd, args, { cwd, stdio: "inherit" });
+  const useShell =
+    process.platform === "win32" && /\.(cmd|bat)$/i.test(cmd);
+  execFileSync(cmd, args, { cwd, stdio: "inherit", shell: useShell });
 }
 
 function sharedLibraryName() {
