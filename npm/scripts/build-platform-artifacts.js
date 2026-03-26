@@ -95,13 +95,22 @@ function latestSubdirectory(dirPath) {
   return path.join(dirPath, entries[0]);
 }
 
-function toolPathFromWhere(toolName) {
+function isMsvcToolPath(toolPath) {
+  if (!toolPath) {
+    return false;
+  }
+
+  const normalized = toolPath.replace(/\//gu, "\\").toLowerCase();
+  return normalized.includes("\\microsoft visual studio\\")
+    || normalized.includes("\\vc\\tools\\msvc\\");
+}
+
+function toolPathsFromWhere(toolName) {
   try {
     const output = capture("where.exe", [toolName], repoRoot);
-    const match = output.split(/\r?\n/u).find(Boolean);
-    return match || null;
+    return output.split(/\r?\n/u).filter(Boolean);
   } catch {
-    return null;
+    return [];
   }
 }
 
@@ -169,16 +178,6 @@ function msvcToolCandidates(toolName) {
 }
 
 function resolveWindowsImportLibraryTool() {
-  const libFromPath = toolPathFromWhere("lib.exe");
-  if (libFromPath) {
-    return { command: libFromPath, extraArgs: [] };
-  }
-
-  const linkFromPath = toolPathFromWhere("link.exe");
-  if (linkFromPath) {
-    return { command: linkFromPath, extraArgs: ["/lib"] };
-  }
-
   const libFromVs = firstExistingFile(msvcToolCandidates("lib.exe"));
   if (libFromVs) {
     return { command: libFromVs, extraArgs: [] };
@@ -187,6 +186,16 @@ function resolveWindowsImportLibraryTool() {
   const linkFromVs = firstExistingFile(msvcToolCandidates("link.exe"));
   if (linkFromVs) {
     return { command: linkFromVs, extraArgs: ["/lib"] };
+  }
+
+  const libFromPath = toolPathsFromWhere("lib.exe").find(isMsvcToolPath);
+  if (libFromPath) {
+    return { command: libFromPath, extraArgs: [] };
+  }
+
+  const linkFromPath = toolPathsFromWhere("link.exe").find(isMsvcToolPath);
+  if (linkFromPath) {
+    return { command: linkFromPath, extraArgs: ["/lib"] };
   }
 
   throw new Error(
