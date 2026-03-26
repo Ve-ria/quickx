@@ -1,6 +1,6 @@
 {
   "name": "@amethyst-labs/quickcli",
-  "version": "2.0.0-beta.6",
+  "version": "2.0.0-beta.7",
   "description": "Switch AI coding assistant providers (Claude Code, Codex, OpenCode) with one command",
   "keywords": [
     "ai",
@@ -22,11 +22,11 @@
     "node-gyp": "^11.2.0"
   },
   "optionalDependencies": {
-    "@amethyst-labs/quickcli-darwin-arm64": "2.0.0-beta.6",
-    "@amethyst-labs/quickcli-darwin-x64": "2.0.0-beta.6",
-    "@amethyst-labs/quickcli-linux-arm64": "2.0.0-beta.6",
-    "@amethyst-labs/quickcli-linux-x64": "2.0.0-beta.6",
-    "@amethyst-labs/quickcli-win32-x64": "2.0.0-beta.6"
+    "@amethyst-labs/quickcli-darwin-arm64": "2.0.0-beta.7",
+    "@amethyst-labs/quickcli-darwin-x64": "2.0.0-beta.7",
+    "@amethyst-labs/quickcli-linux-arm64": "2.0.0-beta.7",
+    "@amethyst-labs/quickcli-linux-x64": "2.0.0-beta.7",
+    "@amethyst-labs/quickcli-win32-x64": "2.0.0-beta.7"
   },
   "scripts": {
     "build:artifacts": "node scripts/build-platform-artifacts.js",

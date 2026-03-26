@@ -17,6 +17,17 @@ function run(cmd, args, cwd) {
   execFileSync(cmd, args, { cwd, stdio: "inherit", shell: useShell });
 }
 
+function capture(cmd, args, cwd) {
+  const useShell =
+    process.platform === "win32" && /\.(cmd|bat)$/i.test(cmd);
+  return execFileSync(cmd, args, {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+    shell: useShell,
+  }).trim();
+}
+
 function sharedLibraryName() {
   if (process.platform === "win32") return "quickcore.dll";
   if (process.platform === "darwin") return "libquickcore.dylib";
@@ -51,6 +62,138 @@ function windowsMachineType() {
   throw new Error(`Unsupported Windows architecture for import library generation: ${process.arch}`);
 }
 
+function windowsTargetBinDir() {
+  if (process.arch === "x64") return "x64";
+  if (process.arch === "ia32") return "x86";
+  if (process.arch === "arm64") return "arm64";
+  throw new Error(`Unsupported Windows architecture for tool discovery: ${process.arch}`);
+}
+
+function firstExistingFile(paths) {
+  for (const candidate of paths) {
+    if (candidate && fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function latestSubdirectory(dirPath) {
+  if (!dirPath || !fs.existsSync(dirPath)) {
+    return null;
+  }
+
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort((left, right) => right.localeCompare(left, undefined, { numeric: true }));
+
+  if (entries.length === 0) {
+    return null;
+  }
+
+  return path.join(dirPath, entries[0]);
+}
+
+function toolPathFromWhere(toolName) {
+  try {
+    const output = capture("where.exe", [toolName], repoRoot);
+    const match = output.split(/\r?\n/u).find(Boolean);
+    return match || null;
+  } catch {
+    return null;
+  }
+}
+
+function vsInstallPathFromVswhere() {
+  const installerRoot = firstExistingFile([
+    process.env.ProgramFiles && path.join(process.env.ProgramFiles, "Microsoft Visual Studio", "Installer", "vswhere.exe"),
+    process.env["ProgramFiles(x86)"] && path.join(process.env["ProgramFiles(x86)"], "Microsoft Visual Studio", "Installer", "vswhere.exe"),
+  ]);
+
+  if (!installerRoot) {
+    return null;
+  }
+
+  try {
+    const output = capture(
+      installerRoot,
+      [
+        "-latest",
+        "-products",
+        "*",
+        "-requires",
+        "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+        "-property",
+        "installationPath",
+      ],
+      repoRoot,
+    );
+    return output || null;
+  } catch {
+    return null;
+  }
+}
+
+function msvcToolCandidates(toolName) {
+  const targetDir = windowsTargetBinDir();
+  const candidates = [];
+
+  if (process.env.VCToolsInstallDir) {
+    candidates.push(path.join(process.env.VCToolsInstallDir, "bin", "Hostx64", targetDir, toolName));
+  }
+
+  const installRoots = [
+    process.env.VSINSTALLDIR,
+    vsInstallPathFromVswhere(),
+    process.env.ProgramFiles && path.join(process.env.ProgramFiles, "Microsoft Visual Studio", "2022", "Enterprise"),
+    process.env.ProgramFiles && path.join(process.env.ProgramFiles, "Microsoft Visual Studio", "2022", "Professional"),
+    process.env.ProgramFiles && path.join(process.env.ProgramFiles, "Microsoft Visual Studio", "2022", "Community"),
+    process.env.ProgramFiles && path.join(process.env.ProgramFiles, "Microsoft Visual Studio", "2022", "BuildTools"),
+    process.env["ProgramFiles(x86)"] && path.join(process.env["ProgramFiles(x86)"], "Microsoft Visual Studio", "2022", "Enterprise"),
+    process.env["ProgramFiles(x86)"] && path.join(process.env["ProgramFiles(x86)"], "Microsoft Visual Studio", "2022", "Professional"),
+    process.env["ProgramFiles(x86)"] && path.join(process.env["ProgramFiles(x86)"], "Microsoft Visual Studio", "2022", "Community"),
+    process.env["ProgramFiles(x86)"] && path.join(process.env["ProgramFiles(x86)"], "Microsoft Visual Studio", "2022", "BuildTools"),
+  ].filter(Boolean);
+
+  for (const installRoot of installRoots) {
+    const msvcRoot = latestSubdirectory(
+      path.join(installRoot, "VC", "Tools", "MSVC"),
+    );
+    if (msvcRoot) {
+      candidates.push(path.join(msvcRoot, "bin", "Hostx64", targetDir, toolName));
+    }
+  }
+
+  return candidates;
+}
+
+function resolveWindowsImportLibraryTool() {
+  const libFromPath = toolPathFromWhere("lib.exe");
+  if (libFromPath) {
+    return { command: libFromPath, extraArgs: [] };
+  }
+
+  const linkFromPath = toolPathFromWhere("link.exe");
+  if (linkFromPath) {
+    return { command: linkFromPath, extraArgs: ["/lib"] };
+  }
+
+  const libFromVs = firstExistingFile(msvcToolCandidates("lib.exe"));
+  if (libFromVs) {
+    return { command: libFromVs, extraArgs: [] };
+  }
+
+  const linkFromVs = firstExistingFile(msvcToolCandidates("link.exe"));
+  if (linkFromVs) {
+    return { command: linkFromVs, extraArgs: ["/lib"] };
+  }
+
+  throw new Error(
+    "Unable to locate lib.exe or link.exe for Windows import library generation.",
+  );
+}
+
 function goExportedSymbols() {
   const cabiSource = fs.readFileSync(
     path.join(repoRoot, "bridge", "cabi", "main.go"),
@@ -69,6 +212,7 @@ function buildWindowsImportLibrary() {
   const defPath = path.join(nativeLibDir, "quickcore.def");
   const libPath = path.join(nativeLibDir, windowsImportLibraryName());
   const exportedSymbols = goExportedSymbols();
+  const tool = resolveWindowsImportLibraryTool();
 
   if (exportedSymbols.length === 0) {
     throw new Error("No //export symbols found in bridge/cabi/main.go");
@@ -83,8 +227,9 @@ function buildWindowsImportLibrary() {
 
   fs.writeFileSync(defPath, defContents);
   run(
-    "lib.exe",
+    tool.command,
     [
+      ...tool.extraArgs,
       `/def:${defPath}`,
       `/out:${libPath}`,
       `/machine:${windowsMachineType()}`,
