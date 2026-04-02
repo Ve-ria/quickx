@@ -1,5 +1,5 @@
 {
-  "name": "quickx",
+  "name": "@amethyst-labs/quickx",
   "version": "1.0.0",
   "description": "Codex profile switcher with a Commander CLI and Ink TUI",
   "keywords": [
