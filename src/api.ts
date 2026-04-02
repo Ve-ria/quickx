@@ -11,10 +11,18 @@ import type {
   ProfileInput,
   StatusInfo,
   StoreData,
+  Template,
+  TemplateSetup,
 } from "./types.js";
 import { currentCodexLoginEmail } from "./lib/auth.js";
 import { applyCodexProfile } from "./lib/codex.js";
 import { authFile, codexConfigFile, configFile } from "./lib/paths.js";
+import {
+  createProfileFromTemplate as createProfileInputFromTemplate,
+  fetchTemplateById,
+  getTemplateSetup as getResolvedTemplateSetup,
+  listTemplates as listResolvedTemplates,
+} from "./lib/templates.js";
 import {
   completeDeviceLogin,
   requestDeviceCode,
@@ -206,5 +214,29 @@ export class QuickxApi {
       name: created.name,
       displayName: created.displayName,
     };
+  }
+
+  async listTemplates(): Promise<Template[]> {
+    return await listResolvedTemplates();
+  }
+
+  async previewTemplate(idOrUrl: string): Promise<Template> {
+    return await fetchTemplateById(idOrUrl);
+  }
+
+  async getTemplateSetup(idOrUrl: string): Promise<TemplateSetup> {
+    return getResolvedTemplateSetup(await fetchTemplateById(idOrUrl));
+  }
+
+  async createProfileFromTemplate(
+    name: string,
+    idOrUrl: string,
+    answers: Record<string, string>,
+  ): Promise<CodexProfile> {
+    const template = await fetchTemplateById(idOrUrl);
+    const resolvedName = name.trim() || template.id;
+    return this.addProfile(
+      createProfileInputFromTemplate(resolvedName, template, answers),
+    );
   }
 }

@@ -5,6 +5,12 @@ export interface AskOptions {
   secret?: boolean;
 }
 
+export interface TemplateQuestion {
+  question: string;
+  defaultValue: string;
+  secret?: boolean;
+}
+
 export interface PromptProfileOptions {
   displayName?: string;
   baseUrl?: string;
@@ -114,4 +120,19 @@ export async function askProfileInputs(
     reasoningEffort: options.reasoningEffort || "",
     modelVerbosity: options.modelVerbosity || "",
   };
+}
+
+export async function askTemplateAnswers(
+  placeholders: TemplateQuestion[],
+): Promise<Record<string, string>> {
+  const answers: Record<string, string> = {};
+
+  for (const placeholder of placeholders) {
+    answers[placeholder.question] = await ask(placeholder.question, {
+      defaultValue: placeholder.defaultValue || "",
+      secret: placeholder.secret,
+    });
+  }
+
+  return answers;
 }

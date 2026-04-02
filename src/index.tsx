@@ -1,8 +1,13 @@
 import { Command } from "commander";
 
 import { QuickxApi } from "./api.js";
-import { askProfileInputs } from "./lib/prompts.js";
-import { printProfileList, printStatus } from "./lib/print.js";
+import { askProfileInputs, askTemplateAnswers } from "./lib/prompts.js";
+import {
+  printProfileList,
+  printStatus,
+  printTemplateList,
+  printTemplatePreview,
+} from "./lib/print.js";
 import { openBrowser } from "./lib/utils.js";
 import { runInkTui } from "./tui.js";
 
@@ -11,6 +16,7 @@ type LoginOptions = {
 };
 
 type AddOptions = {
+  fromTemplate?: string;
   displayName?: string;
   baseUrl?: string;
   apiKey?: string;
@@ -28,6 +34,21 @@ async function runAdd(
   name: string | undefined,
   options: AddOptions,
 ): Promise<void> {
+  if (options.fromTemplate) {
+    const setup = await api.getTemplateSetup(options.fromTemplate);
+    const answers = await askTemplateAnswers(setup.placeholders);
+    const created = await api.createProfileFromTemplate(
+      name || "",
+      options.fromTemplate,
+      answers,
+    );
+    console.log(
+      `Profile "${created.name}" added from template "${options.fromTemplate}".`,
+    );
+    console.log(`Run \`quickx use ${created.name}\` to activate it.`);
+    return;
+  }
+
   const inputs = await askProfileInputs(name, options);
   const created = api.addProfile(inputs);
   console.log(`Profile "${created.name}" added.`);
@@ -139,6 +160,7 @@ async function main(): Promise<void> {
     .command("add")
     .argument("[name]")
     .description("Add a profile, prompting for any missing fields")
+    .option("--from-template <id>", "Template ID or raw template URL")
     .option("--display-name <displayName>", "Display label")
     .option("--base-url <url>", "Provider API base URL")
     .option("--api-key <key>", "API key")
@@ -183,6 +205,35 @@ async function main(): Promise<void> {
     .option("--device", "Use device-code flow instead of browser login")
     .action(async (name: string | undefined, options: LoginOptions) => {
       await runLogin(api, name, options);
+    });
+
+  const templates = program
+    .command("templates")
+    .alias("template")
+    .description("Browse provider templates copied from QuickCLI");
+
+  templates
+    .command("list")
+    .description("List available templates")
+    .action(async () => {
+      printTemplateList(await api.listTemplates());
+    });
+
+  templates
+    .command("preview")
+    .argument("<id-or-url>")
+    .description("Preview a template")
+    .action(async (idOrUrl: string) => {
+      const template = await api.previewTemplate(idOrUrl);
+      const setup = await api.getTemplateSetup(idOrUrl);
+      printTemplatePreview(template);
+      if (setup.placeholders.length > 0) {
+        console.log("\nDynamic fields:");
+        for (const placeholder of setup.placeholders) {
+          const fallback = placeholder.defaultValue || "(required)";
+          console.log(`  - ${placeholder.question} [default: ${fallback}]`);
+        }
+      }
     });
 
   if (process.argv.length <= 2) {

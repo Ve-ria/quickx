@@ -7,6 +7,7 @@ import type {
   EditDraft,
   ListProfilesResult,
   StatusInfo,
+  Template,
 } from "../types.js";
 import {
   addFieldDefs,
@@ -32,7 +33,7 @@ interface AppProps {
   api: QuickxApi;
 }
 
-type Tab = "status" | "configs";
+type Tab = "status" | "configs" | "templates";
 type Mode = "browse" | "add" | "edit" | "login";
 
 export function App({ api }: AppProps): React.JSX.Element {
@@ -43,7 +44,12 @@ export function App({ api }: AppProps): React.JSX.Element {
   const [configResult, setConfigResult] = React.useState<ListProfilesResult>(
     api.listProfiles(),
   );
+  const [templates, setTemplates] = React.useState<Template[]>([]);
   const [selectedConfig, setSelectedConfig] = React.useState(0);
+  const [selectedTemplate, setSelectedTemplate] = React.useState(0);
+  const [previewCache, setPreviewCache] = React.useState<Record<string, Template>>(
+    {},
+  );
   const [message, setMessage] = React.useState("Ready");
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -62,6 +68,9 @@ export function App({ api }: AppProps): React.JSX.Element {
     activeProfile: configResult.activeProfile,
     selectedConfig,
     selectedConfigRow: configResult.profiles[selectedConfig] || null,
+    templates,
+    selectedTemplate,
+    selectedTemplateRow: templates[selectedTemplate] || null,
     addFieldIndex,
     editFieldIndex,
     loginFieldIndex,
@@ -74,12 +83,15 @@ export function App({ api }: AppProps): React.JSX.Element {
     activeProfile: configResult.activeProfile,
     selectedConfig,
     selectedConfigRow: configResult.profiles[selectedConfig] || null,
+    templates,
+    selectedTemplate,
+    selectedTemplateRow: templates[selectedTemplate] || null,
     addFieldIndex,
     editFieldIndex,
     loginFieldIndex,
   };
 
-  const refresh = () => {
+  const refresh = async () => {
     try {
       const nextStatus = api.status();
       const nextConfigResult = api.listProfiles();
@@ -93,6 +105,18 @@ export function App({ api }: AppProps): React.JSX.Element {
 
         return Math.min(index, nextConfigResult.profiles.length - 1);
       });
+
+      if (stateRef.current.tab === "templates") {
+        const nextTemplates = await api.listTemplates();
+        setTemplates(nextTemplates);
+        setSelectedTemplate((index) => {
+          if (nextTemplates.length === 0) {
+            return 0;
+          }
+
+          return Math.min(index, nextTemplates.length - 1);
+        });
+      }
       setError("");
     } catch (refreshError) {
       setError(messageOf(refreshError));
@@ -100,12 +124,58 @@ export function App({ api }: AppProps): React.JSX.Element {
   };
 
   React.useEffect(() => {
-    refresh();
+    void refresh();
   }, []);
 
   const configs = configResult.profiles;
   const activeProfile = configResult.activeProfile;
   const selectedConfigRow = configs[selectedConfig] || null;
+  const selectedTemplateRow = templates[selectedTemplate] || null;
+
+  React.useEffect(() => {
+    if (tab !== "templates") {
+      return;
+    }
+
+    void api
+      .listTemplates()
+      .then((rows) => {
+        setTemplates(rows);
+        setSelectedTemplate((index) => {
+          if (rows.length === 0) {
+            return 0;
+          }
+
+          return Math.min(index, rows.length - 1);
+        });
+      })
+      .catch((templateError) => {
+        setError(messageOf(templateError));
+      });
+  }, [api, tab]);
+
+  React.useEffect(() => {
+    if (tab !== "templates" || !selectedTemplateRow) {
+      return;
+    }
+
+    if (previewCache[selectedTemplateRow.id]) {
+      return;
+    }
+
+    void api
+      .previewTemplate(selectedTemplateRow.id)
+      .then((preview) => {
+        setPreviewCache((cache) => ({
+          ...cache,
+          [selectedTemplateRow.id]: preview,
+        }));
+        setError("");
+      })
+      .catch((templateError) => {
+        setError(messageOf(templateError));
+      });
+  }, [api, previewCache, selectedTemplateRow, tab]);
 
   const openAddForm = () => {
     setMode("add");
@@ -154,7 +224,7 @@ export function App({ api }: AppProps): React.JSX.Element {
       setTab("configs");
       setMessage(`Profile "${created.name}" added`);
       setError("");
-      refresh();
+      void refresh();
     } catch (submitError) {
       setError(messageOf(submitError));
     }
@@ -180,7 +250,7 @@ export function App({ api }: AppProps): React.JSX.Element {
       setTab("configs");
       setMessage(`Profile "${updated.name}" updated`);
       setError("");
-      refresh();
+      void refresh();
     } catch (submitError) {
       setError(messageOf(submitError));
     }
@@ -219,7 +289,7 @@ export function App({ api }: AppProps): React.JSX.Element {
       setMode("browse");
       setTab("configs");
       setError("");
-      refresh();
+      void refresh();
     } catch (submitError) {
       setError(messageOf(submitError));
     } finally {
@@ -409,8 +479,13 @@ export function App({ api }: AppProps): React.JSX.Element {
       return;
     }
 
+    if (input === "3") {
+      setTab("templates");
+      return;
+    }
+
     if (ctrl && input === "r") {
-      refresh();
+      void refresh();
       setMessage("Refreshed");
       return;
     }
@@ -435,7 +510,7 @@ export function App({ api }: AppProps): React.JSX.Element {
         try {
           api.useProfile(current.selectedConfigRow.name);
           setMessage(`Activated ${current.selectedConfigRow.name}`);
-          refresh();
+          void refresh();
         } catch (activateError) {
           setError(messageOf(activateError));
         }
@@ -446,7 +521,7 @@ export function App({ api }: AppProps): React.JSX.Element {
         try {
           api.removeProfile(current.selectedConfigRow.name);
           setMessage(`Removed ${current.selectedConfigRow.name}`);
-          refresh();
+          void refresh();
         } catch (removeError) {
           setError(messageOf(removeError));
         }
@@ -465,6 +540,20 @@ export function App({ api }: AppProps): React.JSX.Element {
 
       if (ctrl && input === "l") {
         openLoginForm();
+        return;
+      }
+    }
+
+    if (current.tab === "templates") {
+      if (key.upArrow) {
+        setSelectedTemplate((index) => Math.max(0, index - 1));
+        return;
+      }
+
+      if (key.downArrow) {
+        setSelectedTemplate((index) =>
+          Math.min(Math.max(0, current.templates.length - 1), index + 1),
+        );
       }
     }
   });
@@ -472,11 +561,28 @@ export function App({ api }: AppProps): React.JSX.Element {
   const tabLine = [
     { id: "status", label: "Status" },
     { id: "configs", label: "Configs" },
+    { id: "templates", label: "Templates" },
   ]
     .map((item) => (item.id === tab ? `[${item.label}]` : ` ${item.label} `))
     .join(" ");
 
   const configWindow = pickWindow(configs, selectedConfig, 14);
+  const templateWindow = pickWindow(templates, selectedTemplate, 14);
+  const currentPreview = selectedTemplateRow
+    ? previewCache[selectedTemplateRow.id] || null
+    : null;
+  const templateDetailLines = currentPreview
+    ? [
+        `ID: ${currentPreview.id || "-"}`,
+        `Name: ${currentPreview.displayName || "-"}`,
+        `Scope: ${currentPreview.scope.join(", ") || "-"}`,
+        `Base URL: ${currentPreview.baseUrl || "-"}`,
+        `Model: ${currentPreview.model || "-"}`,
+        `Wire API: ${currentPreview.wireApi || "-"}`,
+        `Auth Method: ${currentPreview.authMethod || "-"}`,
+        `Docs: ${currentPreview.docsUrl || "-"}`,
+      ]
+    : ["Select a template to preview details."];
   const hints =
     mode === "add"
       ? "Add form: Up/Down move field | Enter next | type | Ctrl+s submit | Esc cancel"
@@ -484,9 +590,11 @@ export function App({ api }: AppProps): React.JSX.Element {
         ? "Edit form: Up/Down move field | Enter next | type | Ctrl+s submit | Esc cancel"
         : mode === "login"
           ? "Login form: Up/Down move field | Enter next | Left/Right or m toggle | Ctrl+s submit | Esc cancel"
+          : tab === "templates"
+            ? "Keys: 1/2/3 switch | Up/Down move | Ctrl+r refresh | Ctrl+q quit"
           : tab === "configs"
             ? "Keys: Up/Down move | Enter or Ctrl+u use | Ctrl+a add | Ctrl+e edit | Ctrl+d delete | Ctrl+l login | Ctrl+r refresh | Ctrl+q quit"
-            : "Keys: 1/2 switch | Ctrl+r refresh | Ctrl+q quit";
+            : "Keys: 1/2/3 switch | Ctrl+r refresh | Ctrl+q quit";
 
   return (
     <Box flexDirection="column" paddingX={1} paddingY={1}>
@@ -634,6 +742,58 @@ export function App({ api }: AppProps): React.JSX.Element {
                 <Text>{`Key: ${maskKey(selectedConfigRow.apiKey)}`}</Text>
               </>
             )}
+          </Box>
+        </Box>
+      ) : null}
+
+      {mode === "browse" && tab === "templates" ? (
+        <Box gap={1}>
+          <Box
+            borderStyle="round"
+            borderColor="magenta"
+            paddingX={1}
+            flexDirection="column"
+            width={72}
+          >
+            <Text bold>Templates</Text>
+            {templates.length === 0 ? (
+              <Text color="gray">No templates available.</Text>
+            ) : (
+              templateWindow.rows.map((template, index) => {
+                const absolute = templateWindow.start + index;
+                const marker = absolute === selectedTemplate ? ">" : " ";
+                const id = truncate(template.id || "-", 22).padEnd(22, " ");
+                const display = truncate(template.displayName || "-", 34).padEnd(
+                  34,
+                  " ",
+                );
+                const scope = truncate(template.scope.join(","), 12);
+
+                return (
+                  <Text
+                    key={`template-${template.id}-${absolute}`}
+                    color={
+                      absolute === selectedTemplate ? "magentaBright" : undefined
+                    }
+                  >
+                    {`${marker} ${id} ${display} ${scope}`}
+                  </Text>
+                );
+              })
+            )}
+          </Box>
+
+          <Box
+            borderStyle="round"
+            borderColor="yellow"
+            paddingX={1}
+            flexDirection="column"
+            width={45}
+          >
+            <Text bold>Preview</Text>
+            {templateDetailLines.map((line, index) => (
+              <Text key={`preview-${index}`}>{line}</Text>
+            ))}
           </Box>
         </Box>
       ) : null}

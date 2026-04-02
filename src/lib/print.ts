@@ -1,4 +1,9 @@
-import type { CodexProfile, ListProfilesResult, StatusInfo } from "../types.js";
+import type {
+  CodexProfile,
+  ListProfilesResult,
+  StatusInfo,
+  Template,
+} from "../types.js";
 import { maskKey } from "./utils.js";
 
 function orNone(value: string): string {
@@ -51,5 +56,36 @@ export function printProfileList(result: ListProfilesResult): void {
     console.log(
       `${profile.name.padEnd(24)} ${profile.authMethod.padEnd(10)} ${orNone(profile.model).slice(0, 20).padEnd(20)} ${profile.displayName}${marker}`,
     );
+  }
+}
+
+export function printTemplateList(templates: Template[]): void {
+  if (templates.length === 0) {
+    console.log("No templates found in the registry.");
+    return;
+  }
+
+  console.log(`${"ID".padEnd(20)} ${"NAME".padEnd(30)} SCOPE`);
+  console.log("─".repeat(70));
+  for (const template of templates) {
+    console.log(
+      `${template.id.padEnd(20)} ${template.displayName.padEnd(30)} ${template.scope.join(",")}`,
+    );
+  }
+}
+
+export function printTemplatePreview(template: Template): void {
+  console.log(`ID          : ${template.id}`);
+  console.log(`Name        : ${template.displayName}`);
+  console.log(`Scope       : ${template.scope.join(", ") || "-"}`);
+  console.log(`Base URL    : ${template.baseUrl || ""}`);
+  console.log(`Model       : ${template.model || ""}`);
+  console.log(`Wire API    : ${template.wireApi || ""}`);
+  console.log(`Auth Method : ${template.authMethod || ""}`);
+  if (template.docsUrl) {
+    console.log(`Docs        : ${template.docsUrl}`);
+  }
+  if (template.requiredEnvs.length > 0) {
+    console.log(`Required Env: ${template.requiredEnvs.join(", ")}`);
   }
 }

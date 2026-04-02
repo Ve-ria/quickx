@@ -15,6 +15,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@amethyst-labs/quickx@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@amethyst-labs/quickx@workspace:."
+  dependencies:
+    "@types/node": "npm:^24.0.0"
+    "@types/react": "npm:^18.3.3"
+    commander: "npm:^14.0.0"
+    ink: "npm:^4.4.1"
+    react: "npm:^18.3.1"
+    tsup: "npm:^8.3.5"
+    tsx: "npm:^4.19.4"
+    typescript: "npm:^5.8.3"
+  bin:
+    quickx: ./dist/index.js
+  languageName: unknown
+  linkType: soft
+
 "@esbuild/aix-ppc64@npm:0.27.5":
   version: 0.27.5
   resolution: "@esbuild/aix-ppc64@npm:0.27.5"
@@ -1407,23 +1424,6 @@ __metadata:
   checksum: 10c0/4f178d4062733ead9d71a9b1ab24ebcecdfe2250916a5b1555f04fe2eda972a0ec76fbaa8df1ad9c02707add6749219d118a4fc46dc56bdfe4dde4b47d80bb82
   languageName: node
   linkType: hard
-
-"quickx@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "quickx@workspace:."
-  dependencies:
-    "@types/node": "npm:^24.0.0"
-    "@types/react": "npm:^18.3.3"
-    commander: "npm:^14.0.0"
-    ink: "npm:^4.4.1"
-    react: "npm:^18.3.1"
-    tsup: "npm:^8.3.5"
-    tsx: "npm:^4.19.4"
-    typescript: "npm:^5.8.3"
-  bin:
-    quickx: ./dist/index.js
-  languageName: unknown
-  linkType: soft
 
 "react-reconciler@npm:^0.29.0":
   version: 0.29.2

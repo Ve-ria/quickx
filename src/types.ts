@@ -12,6 +12,8 @@ export interface CodexProfile {
   authMethod: AuthMethod;
   reasoningEffort: string;
   modelVerbosity: string;
+  templateId?: string;
+  codexTomlContent?: string;
 }
 
 export interface ProfileInput {
@@ -77,6 +79,34 @@ export interface TokenResponse {
 export interface BrowserLoginSession {
   authUrl: string;
   wait: () => Promise<void>;
+}
+
+export interface Template {
+  id: string;
+  displayName: string;
+  scope: string[];
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  wireApi: string;
+  authMethod: string;
+  docsUrl: string;
+  requiredEnvs: string[];
+  reasoningEffort: string;
+  modelVerbosity: string;
+  codexTomlFile: string;
+  codexTomlContent: string;
+}
+
+export interface TemplatePlaceholder {
+  full: string;
+  question: string;
+  defaultValue: string;
+  secret: boolean;
+}
+
+export interface TemplateSetup {
+  placeholders: TemplatePlaceholder[];
 }
 
 export interface AuthFileData {
