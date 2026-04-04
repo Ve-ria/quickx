@@ -6,7 +6,7 @@ on:
       - "v*"
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
 jobs:
@@ -19,7 +19,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
 
       - name: Enable Corepack
@@ -45,9 +45,7 @@ jobs:
         shell: bash
         run: |
           if [[ "${GITHUB_REF_NAME#v}" == *beta* ]]; then
-            npm publish --provenance --access public --tag beta
+            npm publish --access public --tag beta
           else
-            npm publish --provenance --access public
+            npm publish --access public
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
