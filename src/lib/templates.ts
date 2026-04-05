@@ -27,7 +27,7 @@ const builtinTemplates: Template[] = [
     id: "openai",
     displayName: "OpenAI (official)",
     scope: ["codex"],
-    baseUrl: "https://api.openai.com/v1",
+    baseUrl: '${--:"OpenAI Base URL":"https://api.openai.com/v1"}',
     apiKey: '${--:"OpenAI API Key":""}',
     model: '${--:"Default model":"gpt-4o"}',
     wireApi: "responses",
