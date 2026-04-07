@@ -6,6 +6,10 @@ import { makeAddCommand } from "./add.js";
 import { makeEditCommand } from "./edit.js";
 import { makeRemoveCommand } from "./remove.js";
 import { makeLoginCommand } from "./login.js";
+import { makeDuplicateCommand } from "./duplicate.js";
+import { makeRenameCommand } from "./rename.js";
+import { makeExportCommand } from "./export.js";
+import { makeImportCommand } from "./import.js";
 
 export function makeConfigCommand(api: QuickxApi): Command {
   const profiles = new Command("profiles")
@@ -17,6 +21,10 @@ export function makeConfigCommand(api: QuickxApi): Command {
   profiles.addCommand(makeEditCommand(api));
   profiles.addCommand(makeRemoveCommand(api));
   profiles.addCommand(makeLoginCommand(api));
+  profiles.addCommand(makeDuplicateCommand(api));
+  profiles.addCommand(makeRenameCommand(api));
+  profiles.addCommand(makeExportCommand(api));
+  profiles.addCommand(makeImportCommand(api));
 
   return profiles;
 }

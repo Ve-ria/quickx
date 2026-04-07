@@ -1,6 +1,8 @@
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
+import { load as yamlLoad } from "js-yaml";
+
 import type {
   ProfileInput,
   Template,
@@ -120,66 +122,26 @@ function withDefaults(input: Partial<Template>): Template {
   };
 }
 
-function unquote(value: string): string {
-  const trimmed = value.trim();
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
-  ) {
-    return trimmed.slice(1, -1);
-  }
-  return trimmed;
-}
-
 function parseTemplateYaml(content: string): Template {
-  const lines = content.split(/\r?\n/u);
-  const raw: Record<string, unknown> = {};
-  let currentListKey = "";
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) {
-      continue;
-    }
-
-    const listMatch = line.match(/^\s*-\s+(.*)$/u);
-    if (listMatch && currentListKey) {
-      const list = (raw[currentListKey] as string[] | undefined) || [];
-      list.push(unquote(listMatch[1] || ""));
-      raw[currentListKey] = list;
-      continue;
-    }
-
-    currentListKey = "";
-    const keyMatch = line.match(/^([a-zA-Z0-9_]+):\s*(.*)$/u);
-    if (!keyMatch) {
-      continue;
-    }
-
-    const [, key, value] = keyMatch;
-    if (value === "") {
-      raw[key] = [];
-      currentListKey = key;
-      continue;
-    }
-
-    raw[key] = unquote(value);
+  const raw = yamlLoad(content);
+  if (!raw || typeof raw !== "object") {
+    return withDefaults({});
   }
-
+  const data = raw as Record<string, unknown>;
   return withDefaults({
-    id: raw.id as string,
-    displayName: raw.display_name as string,
-    scope: raw.scope as string[],
-    baseUrl: raw.base_url as string,
-    apiKey: raw.api_key as string,
-    model: raw.model as string,
-    wireApi: raw.wire_api as string,
-    authMethod: raw.auth_method as string,
-    docsUrl: raw.docs_url as string,
-    requiredEnvs: raw.required_envs as string[],
-    reasoningEffort: raw.reasoning_effort as string,
-    modelVerbosity: raw.model_verbosity as string,
-    codexTomlFile: raw.codex_toml_file as string,
+    id: data.id as string,
+    displayName: data.display_name as string,
+    scope: data.scope as string[],
+    baseUrl: data.base_url as string,
+    apiKey: data.api_key as string,
+    model: data.model as string,
+    wireApi: data.wire_api as string,
+    authMethod: data.auth_method as string,
+    docsUrl: data.docs_url as string,
+    requiredEnvs: data.required_envs as string[],
+    reasoningEffort: data.reasoning_effort as string,
+    modelVerbosity: data.model_verbosity as string,
+    codexTomlFile: data.codex_toml_file as string,
   });
 }
 
@@ -232,8 +194,11 @@ function saveCache(templates: Template[]): void {
   }
 }
 
+const FETCH_TIMEOUT_MS = 10_000;
+
 async function httpGetJson<T>(url: string): Promise<T> {
   const response = await fetch(url, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: {
       "user-agent": "quickx/quickx",
       accept: "application/json",
@@ -251,6 +216,7 @@ async function httpGetJson<T>(url: string): Promise<T> {
 
 async function httpGetText(url: string): Promise<string> {
   const response = await fetch(url, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: {
       "user-agent": "quickx/quickx",
       accept: "text/plain, text/yaml, application/x-yaml, */*",

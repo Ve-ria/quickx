@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 
 import type { CodexProfile, ProfileInput, StoreData } from "../types.js";
 import { configFile, configHome } from "./paths.js";
@@ -15,6 +15,11 @@ export function normalizeProfile(input: ProfileInput): CodexProfile {
   const name = String(input.name || "").trim();
   if (!name) {
     throw new Error("Profile name is required");
+  }
+  if (!/^[a-zA-Z0-9_-]+$/u.test(name)) {
+    throw new Error(
+      "Profile name must contain only letters, numbers, hyphens, and underscores",
+    );
   }
 
   return {
@@ -51,19 +56,25 @@ function normalizeStore(raw: unknown): StoreData {
           (profile): profile is Record<string, unknown> =>
             Boolean(profile) && typeof profile === "object",
         )
-        .map((profile) =>
-          normalizeProfile({
-            name: String(profile.name || ""),
-            displayName: String(profile.displayName || ""),
-            baseUrl: String(profile.baseUrl || ""),
-            apiKey: String(profile.apiKey || ""),
-            model: String(profile.model || ""),
-            wireApi: String(profile.wireApi || ""),
-            authMethod: String(profile.authMethod || ""),
-            reasoningEffort: String(profile.reasoningEffort || ""),
-            modelVerbosity: String(profile.modelVerbosity || ""),
-          }),
-        )
+        .flatMap((profile) => {
+          try {
+            return [
+              normalizeProfile({
+                name: String(profile.name || ""),
+                displayName: String(profile.displayName || ""),
+                baseUrl: String(profile.baseUrl || ""),
+                apiKey: String(profile.apiKey || ""),
+                model: String(profile.model || ""),
+                wireApi: String(profile.wireApi || ""),
+                authMethod: String(profile.authMethod || ""),
+                reasoningEffort: String(profile.reasoningEffort || ""),
+                modelVerbosity: String(profile.modelVerbosity || ""),
+              }),
+            ];
+          } catch {
+            return [];
+          }
+        })
     : [];
 
   return migrateStore({
@@ -92,12 +103,14 @@ export function loadStore(): StoreData {
 }
 
 export function saveStore(store: StoreData): void {
-  mkdirSync(configHome(), { recursive: true, mode: 0o700 });
-  writeFileSync(
-    configFile(),
-    `${JSON.stringify(normalizeStore(store), null, 2)}\n`,
-    { mode: 0o600 },
-  );
+  const dir = configHome();
+  const file = configFile();
+  const tmp = `${file}.tmp`;
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  writeFileSync(tmp, `${JSON.stringify(normalizeStore(store), null, 2)}\n`, {
+    mode: 0o600,
+  });
+  renameSync(tmp, file);
 }
 
 export function getProfile(

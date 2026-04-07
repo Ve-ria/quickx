@@ -69,7 +69,7 @@ function buildManagedConfig(
   lines.push("");
 
   for (const profile of profiles) {
-    lines.push(`[model_providers.${JSON.stringify(profile.name)}]`);
+    lines.push(`[model_providers.${profile.name}]`);
     lines.push(`name = ${tomlString(profile.displayName || profile.name)}`);
 
     if (profile.baseUrl) {
@@ -107,7 +107,8 @@ export function applyCodexProfile(
 ): void {
   mkdirSync(codexHome(), { recursive: true, mode: 0o700 });
 
-  const result = buildManagedConfig(profiles, active) + preservedSections(codexConfigFile());
+  const preserved = preservedSections(codexConfigFile());
+  const result = buildManagedConfig(profiles, active) + (preserved ? `\n${preserved}` : "");
   writeFileSync(codexConfigFile(), result, { mode: 0o600 });
   writeCodexAuth(active);
 }

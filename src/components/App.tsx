@@ -3,8 +3,6 @@ import { Box, Text, useApp, useInput } from "ink";
 
 import type { QuickxApi } from "../api.js";
 import type {
-  AddDraft,
-  EditDraft,
   ListProfilesResult,
   StatusInfo,
   Template,
@@ -50,21 +48,14 @@ export function App({ api }: { api: QuickxApi }): React.JSX.Element {
   const [message, setMessage] = React.useState("Ready");
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
-  const [addDraft, setAddDraft] = React.useState<AddDraft>(defaultAddDraft());
-  const [addFieldIndex, setAddFieldIndex] = React.useState(0);
-  const [editProfileName, setEditProfileName] = React.useState("");
-  const [editDraft, setEditDraft] = React.useState<EditDraft>(defaultEditDraft());
-  const [editFieldIndex, setEditFieldIndex] = React.useState(0);
-  const [loginDraft, setLoginDraft] = React.useState(defaultLoginDraft());
-  const [loginFieldIndex, setLoginFieldIndex] = React.useState(0);
+  const [addForm, setAddForm] = React.useState({ draft: defaultAddDraft(), fieldIndex: 0 });
+  const [editForm, setEditForm] = React.useState({ profileName: "", draft: defaultEditDraft(), fieldIndex: 0 });
+  const [loginForm, setLoginForm] = React.useState({ draft: defaultLoginDraft(), fieldIndex: 0 });
+  const [templateForm, setTemplateForm] = React.useState<{
+    id: string; name: string; placeholders: TemplatePlaceholder[];
+    answers: Record<string, string>; fieldIndex: number;
+  }>({ id: "", name: "", placeholders: [], answers: {}, fieldIndex: 0 });
   const [confirmDeleteName, setConfirmDeleteName] = React.useState("");
-  const [templateAddId, setTemplateAddId] = React.useState("");
-  const [templateAddName, setTemplateAddName] = React.useState("");
-  const [templateAddPlaceholders, setTemplateAddPlaceholders] = React.useState<
-    TemplatePlaceholder[]
-  >([]);
-  const [templateAnswers, setTemplateAnswers] = React.useState<Record<string, string>>({});
-  const [templateAnswerIndex, setTemplateAnswerIndex] = React.useState(0);
 
   const stateRef = React.useRef({
     tab,
@@ -76,16 +67,11 @@ export function App({ api }: { api: QuickxApi }): React.JSX.Element {
     templates,
     selectedTemplate,
     selectedTemplateRow: templates[selectedTemplate] ?? null,
-    addFieldIndex,
-    editFieldIndex,
-    loginFieldIndex,
-    loginDraft,
+    addForm,
+    editForm,
+    loginForm,
+    templateForm,
     confirmDeleteName,
-    templateAddId,
-    templateAddName,
-    templateAddPlaceholders,
-    templateAnswers,
-    templateAnswerIndex,
   });
 
   stateRef.current = {
@@ -98,19 +84,21 @@ export function App({ api }: { api: QuickxApi }): React.JSX.Element {
     templates,
     selectedTemplate,
     selectedTemplateRow: templates[selectedTemplate] ?? null,
-    addFieldIndex,
-    editFieldIndex,
-    loginFieldIndex,
-    loginDraft,
+    addForm,
+    editForm,
+    loginForm,
+    templateForm,
     confirmDeleteName,
-    templateAddId,
-    templateAddName,
-    templateAddPlaceholders,
-    templateAnswers,
-    templateAnswerIndex,
   };
 
+  const refreshAbortRef = React.useRef<AbortController | null>(null);
+  const previewPendingRef = React.useRef(new Set<string>());
+
   const refresh = React.useCallback(async () => {
+    refreshAbortRef.current?.abort();
+    const abort = new AbortController();
+    refreshAbortRef.current = abort;
+
     try {
       setStatus(api.status());
       const next = api.listProfiles();
@@ -119,12 +107,13 @@ export function App({ api }: { api: QuickxApi }): React.JSX.Element {
 
       if (stateRef.current.tab === "templates") {
         const rows = await api.listTemplates();
+        if (abort.signal.aborted) return;
         setTemplates(rows);
         setSelectedTemplate((i) => Math.min(i, Math.max(0, rows.length - 1)));
       }
-      setError("");
+      if (!abort.signal.aborted) setError("");
     } catch (err) {
-      setError(messageOf(err));
+      if (!abort.signal.aborted) setError(messageOf(err));
     }
   }, [api]);
 
@@ -145,20 +134,24 @@ export function App({ api }: { api: QuickxApi }): React.JSX.Element {
 
   React.useEffect(() => {
     const row = templates[selectedTemplate];
-    if (tab !== "templates" || !row || previewCache[row.id]) return;
+    if (tab !== "templates" || !row || previewCache[row.id] || previewPendingRef.current.has(row.id)) return;
+    previewPendingRef.current.add(row.id);
     void api
       .previewTemplate(row.id)
       .then((preview) => {
+        previewPendingRef.current.delete(row.id);
         setPreviewCache((c) => ({ ...c, [row.id]: preview }));
         setError("");
       })
-      .catch((err) => setError(messageOf(err)));
+      .catch((err) => {
+        previewPendingRef.current.delete(row.id);
+        setError(messageOf(err));
+      });
   }, [api, tab, selectedTemplate, templates]);
 
   const openAddForm = () => {
     setMode("add");
-    setAddDraft(defaultAddDraft());
-    setAddFieldIndex(0);
+    setAddForm({ draft: defaultAddDraft(), fieldIndex: 0 });
     setMessage("Add profile form");
     setError("");
   };
@@ -167,17 +160,14 @@ export function App({ api }: { api: QuickxApi }): React.JSX.Element {
     const row = stateRef.current.selectedProfileRow;
     if (!row) { setError("No profile selected"); return; }
     setMode("edit");
-    setEditProfileName(row.name);
-    setEditDraft(profileToEditDraft(row));
-    setEditFieldIndex(0);
+    setEditForm({ profileName: row.name, draft: profileToEditDraft(row), fieldIndex: 0 });
     setMessage(`Edit profile: ${row.name}`);
     setError("");
   };
 
   const openLoginForm = () => {
     setMode("login");
-    setLoginDraft(defaultLoginDraft());
-    setLoginFieldIndex(0);
+    setLoginForm({ draft: defaultLoginDraft(), fieldIndex: 0 });
     setMessage("Codex login form");
     setError("");
   };
@@ -186,11 +176,7 @@ export function App({ api }: { api: QuickxApi }): React.JSX.Element {
     const setup = getTemplateSetup(template);
     const initialAnswers: Record<string, string> = {};
     for (const p of setup.placeholders) initialAnswers[p.question] = p.defaultValue;
-    setTemplateAddId(template.id);
-    setTemplateAddName(template.id);
-    setTemplateAddPlaceholders(setup.placeholders);
-    setTemplateAnswers(initialAnswers);
-    setTemplateAnswerIndex(0);
+    setTemplateForm({ id: template.id, name: template.id, placeholders: setup.placeholders, answers: initialAnswers, fieldIndex: 0 });
     setMode("template-add");
     setMessage(`Create profile from template: ${template.displayName || template.id}`);
     setError("");
@@ -198,7 +184,7 @@ export function App({ api }: { api: QuickxApi }): React.JSX.Element {
 
   const submitAddForm = () => {
     try {
-      const d = addDraft;
+      const d = addForm.draft;
       const created = api.addProfile({
         name: d.name.trim() || "my-codex",
         displayName: d.displayName.trim() || d.name.trim() || "my-codex",
@@ -220,10 +206,10 @@ export function App({ api }: { api: QuickxApi }): React.JSX.Element {
 
   const submitEditForm = () => {
     try {
-      const d = editDraft;
+      const d = editForm.draft;
       const updated = api.updateProfile({
-        name: editProfileName,
-        displayName: d.displayName.trim() || editProfileName,
+        name: editForm.profileName,
+        displayName: d.displayName.trim() || editForm.profileName,
         baseUrl: d.baseUrl.trim(),
         apiKey: d.apiKey,
         model: d.model.trim(),
@@ -244,7 +230,7 @@ export function App({ api }: { api: QuickxApi }): React.JSX.Element {
   const submitLoginForm = async () => {
     setLoading(true);
     try {
-      const { name: desiredName, method } = stateRef.current.loginDraft;
+      const { name: desiredName, method } = stateRef.current.loginForm.draft;
       if (method === "device") {
         const pending = await api.loginCodexRequestDevice();
         setMessage(`Device code: ${pending.userCode} | URL: ${pending.verificationUrl}`);
@@ -274,11 +260,11 @@ export function App({ api }: { api: QuickxApi }): React.JSX.Element {
   const submitTemplateAdd = async () => {
     setLoading(true);
     try {
-      const c = stateRef.current;
+      const { id, name, answers } = stateRef.current.templateForm;
       const created = await api.createProfileFromTemplate(
-        c.templateAddName.trim() || c.templateAddId,
-        c.templateAddId,
-        c.templateAnswers,
+        name.trim() || id,
+        id,
+        answers,
       );
       setMode("browse");
       setTab("profiles");
@@ -298,75 +284,75 @@ export function App({ api }: { api: QuickxApi }): React.JSX.Element {
 
     if (c.mode === "add") {
       if (key.escape) { setMode("browse"); setMessage("Canceled add profile"); return; }
-      if (key.upArrow) { setAddFieldIndex((i) => prevFieldIndex(i, addFieldDefs.length)); return; }
-      if (key.downArrow || key.return) { setAddFieldIndex((i) => nextFieldIndex(i, addFieldDefs.length)); return; }
+      if (key.upArrow) { setAddForm((f) => ({ ...f, fieldIndex: prevFieldIndex(f.fieldIndex, addFieldDefs.length) })); return; }
+      if (key.downArrow || key.return) { setAddForm((f) => ({ ...f, fieldIndex: nextFieldIndex(f.fieldIndex, addFieldDefs.length) })); return; }
       if (ctrl && input === "s") { submitAddForm(); return; }
       if (key.backspace || key.delete) {
-        const fk = addFieldDefs[c.addFieldIndex]?.key;
-        if (fk) setAddDraft((d) => ({ ...d, [fk]: d[fk].slice(0, Math.max(0, d[fk].length - 1)) }));
+        const fk = addFieldDefs[c.addForm.fieldIndex]?.key;
+        if (fk) setAddForm((f) => ({ ...f, draft: { ...f.draft, [fk]: f.draft[fk].slice(0, Math.max(0, f.draft[fk].length - 1)) } }));
         return;
       }
       if (isPrintableInput(input, key)) {
-        const fk = addFieldDefs[c.addFieldIndex]?.key;
-        if (fk) setAddDraft((d) => ({ ...d, [fk]: `${d[fk]}${input}` }));
+        const fk = addFieldDefs[c.addForm.fieldIndex]?.key;
+        if (fk) setAddForm((f) => ({ ...f, draft: { ...f.draft, [fk]: `${f.draft[fk]}${input}` } }));
       }
       return;
     }
 
     if (c.mode === "edit") {
       if (key.escape) { setMode("browse"); setMessage("Canceled edit profile"); return; }
-      if (key.upArrow) { setEditFieldIndex((i) => prevFieldIndex(i, editFieldDefs.length)); return; }
-      if (key.downArrow || key.return) { setEditFieldIndex((i) => nextFieldIndex(i, editFieldDefs.length)); return; }
+      if (key.upArrow) { setEditForm((f) => ({ ...f, fieldIndex: prevFieldIndex(f.fieldIndex, editFieldDefs.length) })); return; }
+      if (key.downArrow || key.return) { setEditForm((f) => ({ ...f, fieldIndex: nextFieldIndex(f.fieldIndex, editFieldDefs.length) })); return; }
       if (ctrl && input === "s") { submitEditForm(); return; }
       if (key.backspace || key.delete) {
-        const fk = editFieldDefs[c.editFieldIndex]?.key;
-        if (fk) setEditDraft((d) => ({ ...d, [fk]: d[fk].slice(0, Math.max(0, d[fk].length - 1)) }));
+        const fk = editFieldDefs[c.editForm.fieldIndex]?.key;
+        if (fk) setEditForm((f) => ({ ...f, draft: { ...f.draft, [fk]: f.draft[fk].slice(0, Math.max(0, f.draft[fk].length - 1)) } }));
         return;
       }
       if (isPrintableInput(input, key)) {
-        const fk = editFieldDefs[c.editFieldIndex]?.key;
-        if (fk) setEditDraft((d) => ({ ...d, [fk]: `${d[fk]}${input}` }));
+        const fk = editFieldDefs[c.editForm.fieldIndex]?.key;
+        if (fk) setEditForm((f) => ({ ...f, draft: { ...f.draft, [fk]: `${f.draft[fk]}${input}` } }));
       }
       return;
     }
 
     if (c.mode === "login") {
       if (key.escape) { setMode("browse"); setMessage("Canceled login"); return; }
-      if (key.upArrow) { setLoginFieldIndex((i) => prevFieldIndex(i, 2)); return; }
-      if (key.downArrow || key.return) { setLoginFieldIndex((i) => nextFieldIndex(i, 2)); return; }
+      if (key.upArrow) { setLoginForm((f) => ({ ...f, fieldIndex: prevFieldIndex(f.fieldIndex, 2) })); return; }
+      if (key.downArrow || key.return) { setLoginForm((f) => ({ ...f, fieldIndex: nextFieldIndex(f.fieldIndex, 2) })); return; }
       if (ctrl && input === "s") { void submitLoginForm(); return; }
-      if (c.loginFieldIndex === 1 && (key.leftArrow || key.rightArrow || input === "m")) {
-        setLoginDraft((d) => ({ ...d, method: d.method === "browser" ? "device" : "browser" }));
+      if (c.loginForm.fieldIndex === 1 && (key.leftArrow || key.rightArrow || input === "m")) {
+        setLoginForm((f) => ({ ...f, draft: { ...f.draft, method: f.draft.method === "browser" ? "device" : "browser" } }));
         return;
       }
-      if (c.loginFieldIndex === 0) {
-        if (key.backspace || key.delete) { setLoginDraft((d) => ({ ...d, name: d.name.slice(0, Math.max(0, d.name.length - 1)) })); return; }
-        if (isPrintableInput(input, key)) setLoginDraft((d) => ({ ...d, name: `${d.name}${input}` }));
+      if (c.loginForm.fieldIndex === 0) {
+        if (key.backspace || key.delete) { setLoginForm((f) => ({ ...f, draft: { ...f.draft, name: f.draft.name.slice(0, Math.max(0, f.draft.name.length - 1)) } })); return; }
+        if (isPrintableInput(input, key)) setLoginForm((f) => ({ ...f, draft: { ...f.draft, name: `${f.draft.name}${input}` } }));
       }
       return;
     }
 
     if (c.mode === "template-add") {
-      const totalFields = 1 + c.templateAddPlaceholders.length;
+      const totalFields = 1 + c.templateForm.placeholders.length;
       if (key.escape) { setMode("browse"); setMessage("Canceled template add"); return; }
-      if (key.upArrow) { setTemplateAnswerIndex((i) => prevFieldIndex(i, totalFields)); return; }
-      if (key.downArrow || key.return) { setTemplateAnswerIndex((i) => nextFieldIndex(i, totalFields)); return; }
+      if (key.upArrow) { setTemplateForm((f) => ({ ...f, fieldIndex: prevFieldIndex(f.fieldIndex, totalFields) })); return; }
+      if (key.downArrow || key.return) { setTemplateForm((f) => ({ ...f, fieldIndex: nextFieldIndex(f.fieldIndex, totalFields) })); return; }
       if (ctrl && input === "s") { void submitTemplateAdd(); return; }
       if (key.backspace || key.delete) {
-        if (c.templateAnswerIndex === 0) {
-          setTemplateAddName((n) => n.slice(0, Math.max(0, n.length - 1)));
+        if (c.templateForm.fieldIndex === 0) {
+          setTemplateForm((f) => ({ ...f, name: f.name.slice(0, Math.max(0, f.name.length - 1)) }));
         } else {
-          const ph = c.templateAddPlaceholders[c.templateAnswerIndex - 1];
-          if (ph) setTemplateAnswers((a) => ({ ...a, [ph.question]: (a[ph.question] ?? "").slice(0, Math.max(0, (a[ph.question] ?? "").length - 1)) }));
+          const ph = c.templateForm.placeholders[c.templateForm.fieldIndex - 1];
+          if (ph) setTemplateForm((f) => ({ ...f, answers: { ...f.answers, [ph.question]: (f.answers[ph.question] ?? "").slice(0, Math.max(0, (f.answers[ph.question] ?? "").length - 1)) } }));
         }
         return;
       }
       if (isPrintableInput(input, key)) {
-        if (c.templateAnswerIndex === 0) {
-          setTemplateAddName((n) => `${n}${input}`);
+        if (c.templateForm.fieldIndex === 0) {
+          setTemplateForm((f) => ({ ...f, name: `${f.name}${input}` }));
         } else {
-          const ph = c.templateAddPlaceholders[c.templateAnswerIndex - 1];
-          if (ph) setTemplateAnswers((a) => ({ ...a, [ph.question]: `${a[ph.question] ?? ""}${input}` }));
+          const ph = c.templateForm.placeholders[c.templateForm.fieldIndex - 1];
+          if (ph) setTemplateForm((f) => ({ ...f, answers: { ...f.answers, [ph.question]: `${f.answers[ph.question] ?? ""}${input}` } }));
         }
       }
       return;
@@ -467,18 +453,18 @@ export function App({ api }: { api: QuickxApi }): React.JSX.Element {
       <Text color="gray">{tabLine}</Text>
       {loading ? <Text>Working...</Text> : null}
 
-      {mode === "add" ? <AddProfileForm draft={addDraft} fieldIndex={addFieldIndex} /> : null}
+      {mode === "add" ? <AddProfileForm draft={addForm.draft} fieldIndex={addForm.fieldIndex} /> : null}
       {mode === "edit" ? (
-        <EditProfileForm profileName={editProfileName} draft={editDraft} fieldIndex={editFieldIndex} />
+        <EditProfileForm profileName={editForm.profileName} draft={editForm.draft} fieldIndex={editForm.fieldIndex} />
       ) : null}
-      {mode === "login" ? <LoginForm draft={loginDraft} fieldIndex={loginFieldIndex} /> : null}
+      {mode === "login" ? <LoginForm draft={loginForm.draft} fieldIndex={loginForm.fieldIndex} /> : null}
       {mode === "template-add" ? (
         <TemplateAddForm
-          templateId={templateAddId}
-          profileName={templateAddName}
-          placeholders={templateAddPlaceholders}
-          answers={templateAnswers}
-          fieldIndex={templateAnswerIndex}
+          templateId={templateForm.id}
+          profileName={templateForm.name}
+          placeholders={templateForm.placeholders}
+          answers={templateForm.answers}
+          fieldIndex={templateForm.fieldIndex}
         />
       ) : null}
       {mode === "confirm-delete" ? <ConfirmDeleteForm name={confirmDeleteName} /> : null}

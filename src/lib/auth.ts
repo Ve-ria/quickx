@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 
 import type { AuthFileData, TokenResponse } from "../types.js";
 import { authFile, codexHome } from "./paths.js";
@@ -26,10 +26,12 @@ function updateAuthFile(mutator: (data: AuthFileData) => void): void {
   const data = readAuthFile();
   mutator(data);
 
-  mkdirSync(codexHome(), { recursive: true, mode: 0o700 });
-  writeFileSync(authFile(), `${JSON.stringify(data, null, 2)}\n`, {
-    mode: 0o600,
-  });
+  const dir = codexHome();
+  const file = authFile();
+  const tmp = `${file}.tmp`;
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  writeFileSync(tmp, `${JSON.stringify(data, null, 2)}\n`, { mode: 0o600 });
+  renameSync(tmp, file);
 }
 
 export function writeApiKey(apiKey: string): void {

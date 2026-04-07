@@ -63,6 +63,31 @@ export function messageOf(error: unknown): string {
   return String(error);
 }
 
+/** Levenshtein distance (max 3) — returns Infinity if over threshold */
+function editDistance(a: string, b: string, max = 3): number {
+  if (Math.abs(a.length - b.length) > max) return Infinity;
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let prev = i;
+    for (let j = 1; j <= b.length; j++) {
+      const next = a[i - 1] === b[j - 1] ? (row[j - 1] ?? 0) : 1 + Math.min(prev, row[j] ?? 0, row[j - 1] ?? 0);
+      row[j - 1] = prev;
+      prev = next;
+    }
+    row[b.length] = prev;
+  }
+  return row[b.length] ?? Infinity;
+}
+
+export function findSimilarNames(name: string, candidates: string[]): string[] {
+  return candidates
+    .map((c) => ({ name: c, dist: editDistance(name.toLowerCase(), c.toLowerCase()) }))
+    .filter(({ dist }) => dist <= 3)
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, 3)
+    .map(({ name: n }) => n);
+}
+
 export function openBrowser(url: string): boolean {
   try {
     if (process.platform === "darwin") {

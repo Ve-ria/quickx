@@ -34,7 +34,7 @@ import {
   normalizeProfile,
   saveStore,
 } from "./lib/store.js";
-import { cloneProfiles, sanitizeEmail } from "./lib/utils.js";
+import { cloneProfiles, findSimilarNames, sanitizeEmail } from "./lib/utils.js";
 
 export class QuickxApi {
   private store: StoreData = loadStore();
@@ -111,7 +111,7 @@ export class QuickxApi {
     this.reload();
     const index = this.store.profiles.findIndex((profile) => profile.name === name);
     if (index === -1) {
-      throw new Error(`No profile named "${name}"`);
+      throw new Error(this._notFoundError(name));
     }
 
     this.store.profiles.splice(index, 1);
@@ -122,16 +122,104 @@ export class QuickxApi {
     this._save();
   }
 
+  duplicateProfile(sourceName: string, newName: string): CodexProfile {
+    this.reload();
+    const source = getProfile(this.store, sourceName);
+    if (!source) {
+      throw new Error(this._notFoundError(sourceName));
+    }
+
+    return this.addProfile({ ...source, name: newName });
+  }
+
+  renameProfile(oldName: string, newName: string): CodexProfile {
+    this.reload();
+    const profile = getProfile(this.store, oldName);
+    if (!profile) {
+      throw new Error(this._notFoundError(oldName));
+    }
+
+    const wasActive = this.store.activeProfile === oldName;
+    const renamed = this.addProfile({ ...profile, name: newName });
+    this.removeProfile(oldName);
+    if (wasActive) {
+      this.store.activeProfile = newName;
+      this._save();
+    }
+
+    return renamed;
+  }
+
+  exportProfiles(): string {
+    this.reload();
+    return JSON.stringify(
+      { version: this.store.version, activeProfile: this.store.activeProfile, profiles: cloneProfiles(this.store.profiles) },
+      null,
+      2,
+    );
+  }
+
+  importProfiles(json: string, overwrite = false): { added: number; skipped: number } {
+    this.reload();
+    const data = JSON.parse(json) as { profiles?: unknown[] };
+    if (!Array.isArray(data.profiles)) {
+      throw new Error("Invalid export file: missing profiles array");
+    }
+
+    let added = 0;
+    let skipped = 0;
+
+    for (const raw of data.profiles) {
+      if (!raw || typeof raw !== "object") { skipped++; continue; }
+      const r = raw as Record<string, unknown>;
+      try {
+        const profile = normalizeProfile({
+          name: String(r.name || ""),
+          displayName: String(r.displayName || ""),
+          baseUrl: String(r.baseUrl || ""),
+          apiKey: String(r.apiKey || ""),
+          model: String(r.model || ""),
+          wireApi: String(r.wireApi || ""),
+          authMethod: String(r.authMethod || ""),
+          reasoningEffort: String(r.reasoningEffort || ""),
+          modelVerbosity: String(r.modelVerbosity || ""),
+        });
+
+        const existing = getProfile(this.store, profile.name);
+        if (existing && !overwrite) { skipped++; continue; }
+        if (existing) {
+          const idx = this.store.profiles.indexOf(existing);
+          this.store.profiles[idx] = profile;
+        } else {
+          this.store.profiles.push(profile);
+        }
+        added++;
+      } catch {
+        skipped++;
+      }
+    }
+
+    this._save();
+    return { added, skipped };
+  }
+
   useProfile(name: string): void {
     this.reload();
     const profile = getProfile(this.store, name);
     if (!profile) {
-      throw new Error(`No profile named "${name}"`);
+      throw new Error(this._notFoundError(name));
     }
 
     applyCodexProfile(profile, this.store.profiles);
     this.store.activeProfile = name;
     this._save();
+  }
+
+  private _notFoundError(name: string): string {
+    const names = this.store.profiles.map((p) => p.name);
+    const similar = findSimilarNames(name, names);
+    const hint = similar.length > 0 ? ` Did you mean: ${similar.join(", ")}?` : "";
+    return `No profile named "${name}".${hint}`;
   }
 
   async loginCodexRequestDevice(): Promise<DeviceCodeInfo> {
